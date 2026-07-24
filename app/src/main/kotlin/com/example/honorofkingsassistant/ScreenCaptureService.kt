@@ -229,6 +229,7 @@ class ScreenCaptureService : Service() {
         intent?.getParcelableExtra(EXTRA_RESULT_DATA)
     }
 
+    @android.annotation.SuppressLint("WrongConstant")
     private fun startProjection(resultCode: Int, resultData: Intent) {
         val manager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         mediaProjection = manager.getMediaProjection(resultCode, resultData).also { projection ->
