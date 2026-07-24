@@ -1,0 +1,17 @@
+.gradle/
+.idea/
+*.iml
+local.properties
+build/
+app/build/
+build-output.txt
+*.apk
+*.aab
+.aider.tags.cache*/
+.aider.chat.history.md
+.aider.input.history
+.worktrees/
+.aider-knowledge/
+build-output-v4.txt
+*.jks
+*.keystore

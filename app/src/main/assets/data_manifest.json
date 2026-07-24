@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "server": "Honor of Kings Global / International",
+  "roster_count": 116,
+  "patch_label": "Season 15 HOK Plus 2.0",
+  "snapshot_date": "2026-07-24",
+  "sources": [
+    {
+      "type": "official_rules",
+      "name": "2025 Honor of Kings World Cup Official Rulebook",
+      "purpose": "Ban and pick sequence and timing"
+    },
+    {
+      "type": "official_game_data",
+      "name": "Honor of Kings official hero and patch information",
+      "purpose": "Hero names, roles, abilities and balance changes"
+    },
+    {
+      "type": "independent_current_meta",
+      "name": "HoKStats.gg international server database",
+      "purpose": "Current patch tier, matchup and rate context"
+    }
+  ],
+  "counter_relations": {
+    "count": 348,
+    "status": "mechanical_relationships_with_per_relation_confidence",
+    "minimum_confidence": 0.65,
+    "note": "Counters are not labeled official unless the source explicitly states so."
+  },
+  "vision": {
+    "profile": "hok_global_landscape_video_calibrated_v2",
+    "player_name": "R-95",
+    "player_slot": null,
+    "enemy_on_right_default": true,
+    "calibration": "complete 237.5-second 848x392 recording plus 1600x738 late-draft screenshots",
+    "manual_stage_control": {
+      "states": [
+        "PAUSED",
+        "DRAFT",
+        "IN_GAME"
+      ],
+      "automatic_transition": "suggest_only",
+      "paused_behavior": "MediaProjection session retained; VirtualDisplay surface detached; no frame processing",
+      "draft_behavior": "OCR, portrait matching, slot tracking and recommendations enabled",
+      "in_game_behavior": "draft vision disabled; final composition and strategy retained"
+    },
+    "player_slot_policy": "automatic row-bounded OCR requires 4 consistent frames; manual 1-5 always overrides",
+    "video_timeline_seconds": {
+      "ban": [
+        5,
+        30
+      ],
+      "pick": [
+        35,
+        145
+      ],
+      "adjustments": [
+        146,
+        160
+      ],
+      "loading": [
+        165,
+        189
+      ],
+      "in_game": [
+        190,
+        237.5
+      ]
+    }
+  }
+}

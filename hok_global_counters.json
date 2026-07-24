@@ -1,0 +1,2208 @@
+{
+  "heroes": [
+    {
+      "id": "annette",
+      "name": "Annette",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Annette durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Da Qiao",
+          "reason": "Sus silencios, aceleraciones y retirada global desarman la iniciación de Annette y niegan peleas prolongadas."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Annette en la retaguardia, negando sustain y escape."
+        }
+      ]
+    },
+    {
+      "id": "ata",
+      "name": "Ata",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Lu Bu",
+          "reason": "Su daño verdadero y curación en peleas largas atraviesan la armadura y el aguante de Ata."
+        },
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Ata y evitan intercambios frontales."
+        },
+        {
+          "hero_name": "Allain",
+          "reason": "Su daño mixto y verdadero, junto con su invulnerabilidad temporal, atraviesa la resistencia de Ata y gana duelos prolongados."
+        }
+      ]
+    },
+    {
+      "id": "butterfly",
+      "name": "Butterfly",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Butterfly durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Butterfly incluso durante una entrada muy móvil."
+        },
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Butterfly de la retaguardia y arruinan su ejecución."
+        }
+      ]
+    },
+    {
+      "id": "devara",
+      "name": "Devara",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Fuzi",
+          "reason": "Su Ultimate encierra a Devara en un área pequeña y su reducción de daño le permite ganar el duelo sin dejarlo escapar."
+        },
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Devara y evitan intercambios frontales."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Devara en la retaguardia, negando sustain y escape."
+        }
+      ]
+    },
+    {
+      "id": "fatih",
+      "name": "Fatih",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Fatih en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Garo",
+          "reason": "Su alcance superior, ralentizaciones y daño sostenido permiten kitear a Fatih y desgastarlo antes de que llegue."
+        },
+        {
+          "hero_name": "Fuzi",
+          "reason": "Su Ultimate encierra a Fatih en un área pequeña y su reducción de daño le permite ganar el duelo sin dejarlo escapar."
+        }
+      ]
+    },
+    {
+      "id": "florentino",
+      "name": "Florentino",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Florentino durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Fuzi",
+          "reason": "Su Ultimate encierra a Florentino en un área pequeña y su reducción de daño le permite ganar el duelo sin dejarlo escapar."
+        },
+        {
+          "hero_name": "Wang Zhaojun",
+          "reason": "Sus ralentizaciones, congelación y gran zona de Ultimate bloquean las rutas de movilidad de Florentino."
+        }
+      ]
+    },
+    {
+      "id": "flowborn_mage",
+      "name": "Flowborn (Mage)",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Sima Yi",
+          "reason": "Su salto hacia fuentes de magia, silencio y ráfaga le permiten entrar directamente sobre Flowborn (Mage) y cortar su lanzamiento."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Flowborn (Mage) desde larga distancia y no le dan espacio para reposicionarse."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Flowborn (Mage) en la retaguardia, negando sustain y escape."
+        }
+      ]
+    },
+    {
+      "id": "flowborn_tank",
+      "name": "Flowborn (Tank)",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Lu Bu",
+          "reason": "Su daño verdadero y curación en peleas largas atraviesan la armadura y el aguante de Flowborn (Tank)."
+        },
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Flowborn (Tank) y evitan intercambios frontales."
+        },
+        {
+          "hero_name": "Allain",
+          "reason": "Su daño mixto y verdadero, junto con su invulnerabilidad temporal, atraviesa la resistencia de Flowborn (Tank) y gana duelos prolongados."
+        }
+      ]
+    },
+    {
+      "id": "garuda",
+      "name": "Garuda",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Sima Yi",
+          "reason": "Su salto hacia fuentes de magia, silencio y ráfaga le permiten entrar directamente sobre Garuda y cortar su lanzamiento."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Garuda en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Garuda desde larga distancia y no le dan espacio para reposicionarse."
+        }
+      ]
+    },
+    {
+      "id": "lapulapu",
+      "name": "Lapulapu",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Zhuangzi",
+          "reason": "Su limpieza grupal y resistencia al control anulan la principal herramienta de iniciación o bloqueo de Lapulapu."
+        },
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Lapulapu y evitan intercambios frontales."
+        },
+        {
+          "hero_name": "Da Qiao",
+          "reason": "Sus silencios, aceleraciones y retirada global desarman la iniciación de Lapulapu y niegan peleas prolongadas."
+        }
+      ]
+    },
+    {
+      "id": "lorion",
+      "name": "Lorion",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Sima Yi",
+          "reason": "Su salto hacia fuentes de magia, silencio y ráfaga le permiten entrar directamente sobre Lorion y cortar su lanzamiento."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Lorion en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Lorion desde larga distancia y no le dan espacio para reposicionarse."
+        }
+      ]
+    },
+    {
+      "id": "luara",
+      "name": "Luara",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Luara de la retaguardia y arruinan su ejecución."
+        },
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Luara durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Luara incluso durante una entrada muy móvil."
+        }
+      ]
+    },
+    {
+      "id": "agudo",
+      "name": "Agudo",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Pei",
+          "reason": "Su presión temprana, movilidad y cambio entre rango y cuerpo a cuerpo invaden a Agudo antes de que escale."
+        },
+        {
+          "hero_name": "Liu Bei",
+          "reason": "Su daño explosivo a corta distancia, escudo y resistencia al control castigan a Agudo cuando intenta mantener una zona estática."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Agudo desde larga distancia y no le dan espacio para reposicionarse."
+        }
+      ]
+    },
+    {
+      "id": "alessio",
+      "name": "Alessio",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Garo",
+          "reason": "Su alcance superior, ralentizaciones y daño sostenido permiten kitear a Alessio y desgastarlo antes de que llegue."
+        },
+        {
+          "hero_name": "Mozi",
+          "reason": "Su poke, aturdimientos a distancia y control en área interrumpen a Alessio antes de que complete la entrada."
+        },
+        {
+          "hero_name": "Kui",
+          "reason": "Su gancho saca a Alessio de posición y lo obliga a pelear lejos de su equipo o de su zona segura."
+        }
+      ]
+    },
+    {
+      "id": "allain",
+      "name": "Allain",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Allain durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Fuzi",
+          "reason": "Su Ultimate encierra a Allain en un área pequeña y su reducción de daño le permite ganar el duelo sin dejarlo escapar."
+        },
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Allain y evitan intercambios frontales."
+        }
+      ]
+    },
+    {
+      "id": "angela",
+      "name": "Angela",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Yao",
+          "reason": "Sus múltiples desplazamientos y mitigación le permiten esquivar la habilidad clave de Angela y contraatacar desde otro ángulo."
+        },
+        {
+          "hero_name": "Sima Yi",
+          "reason": "Su salto hacia fuentes de magia, silencio y ráfaga le permiten entrar directamente sobre Angela y cortar su lanzamiento."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Angela desde larga distancia y no le dan espacio para reposicionarse."
+        }
+      ]
+    },
+    {
+      "id": "aoyin",
+      "name": "Ao'yin",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Ao'yin durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Ao'yin incluso durante una entrada muy móvil."
+        },
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Ao'yin de la retaguardia y arruinan su ejecución."
+        }
+      ]
+    },
+    {
+      "id": "arke",
+      "name": "Arke",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Arke durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Arke incluso durante una entrada muy móvil."
+        },
+        {
+          "hero_name": "Wang Zhaojun",
+          "reason": "Sus ralentizaciones, congelación y gran zona de Ultimate bloquean las rutas de movilidad de Arke."
+        }
+      ]
+    },
+    {
+      "id": "arli",
+      "name": "Arli",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Arli de la retaguardia y arruinan su ejecución."
+        },
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Arli durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Arli incluso durante una entrada muy móvil."
+        }
+      ]
+    },
+    {
+      "id": "arthur",
+      "name": "Arthur",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Cai Yan",
+          "reason": "Su curación constante y control breve neutralizan el daño sostenido de Arthur y alargan la pelea a favor de su equipo."
+        },
+        {
+          "hero_name": "Liu Shan",
+          "reason": "Su control repetido y resistencia al entrar anulan el daño continuo de Arthur y lo mantienen lejos de los objetivos frágiles."
+        },
+        {
+          "hero_name": "Pei",
+          "reason": "Su presión temprana, movilidad y cambio entre rango y cuerpo a cuerpo invaden a Arthur antes de que escale."
+        }
+      ]
+    },
+    {
+      "id": "athena",
+      "name": "Athena",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Da Qiao",
+          "reason": "Sus silencios, aceleraciones y retirada global desarman la iniciación de Athena y niegan peleas prolongadas."
+        },
+        {
+          "hero_name": "Nakoruru",
+          "reason": "Su gran ráfaga y daño contra objetivos con mucha vida castigan a Athena antes de que pueda sostener la pelea."
+        },
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Athena durante la entrada y le impide completar su combo o escapar."
+        }
+      ]
+    },
+    {
+      "id": "augran",
+      "name": "Augran",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Angela",
+          "reason": "Su inmovilización seguida de una ráfaga muy alta elimina a Augran antes de que pueda sostenerse o completar su combo."
+        },
+        {
+          "hero_name": "Daji",
+          "reason": "Su control dirigido y combo explosivo castigan a Augran en cuanto entra en rango, sin darle tiempo para reaccionar."
+        },
+        {
+          "hero_name": "Yixing",
+          "reason": "Su tablero y Ultimate cierran un área, bloquean las rutas de escape de Augran y castigan su movilidad."
+        }
+      ]
+    },
+    {
+      "id": "bai_qi",
+      "name": "Bai Qi",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Zhuangzi",
+          "reason": "Su limpieza grupal y resistencia al control anulan la principal herramienta de iniciación o bloqueo de Bai Qi."
+        },
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Bai Qi y evitan intercambios frontales."
+        },
+        {
+          "hero_name": "Lu Bu",
+          "reason": "Su daño verdadero y curación en peleas largas atraviesan la armadura y el aguante de Bai Qi."
+        }
+      ]
+    },
+    {
+      "id": "biron",
+      "name": "Biron",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Da Qiao",
+          "reason": "Sus silencios, aceleraciones y retirada global desarman la iniciación de Biron y niegan peleas prolongadas."
+        },
+        {
+          "hero_name": "Liu Shan",
+          "reason": "Su control repetido y resistencia al entrar anulan el daño continuo de Biron y lo mantienen lejos de los objetivos frágiles."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Biron en la retaguardia, negando sustain y escape."
+        }
+      ]
+    },
+    {
+      "id": "cai_yan",
+      "name": "Cai Yan",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Cai Yan en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Guiguzi",
+          "reason": "Su camuflaje, aceleración y atracción en área aíslan a Cai Yan o separan al aliado que intenta proteger."
+        },
+        {
+          "hero_name": "Daji",
+          "reason": "Su control dirigido y combo explosivo castigan a Cai Yan en cuanto entra en rango, sin darle tiempo para reaccionar."
+        }
+      ]
+    },
+    {
+      "id": "chano",
+      "name": "Chano",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Chano durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Chano incluso durante una entrada muy móvil."
+        },
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Chano de la retaguardia y arruinan su ejecución."
+        }
+      ]
+    },
+    {
+      "id": "charlotte",
+      "name": "Charlotte",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Charlotte durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Fuzi",
+          "reason": "Su Ultimate encierra a Charlotte en un área pequeña y su reducción de daño le permite ganar el duelo sin dejarlo escapar."
+        },
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Charlotte y evitan intercambios frontales."
+        }
+      ]
+    },
+    {
+      "id": "chicha",
+      "name": "Chicha",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Chicha durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Chicha incluso durante una entrada muy móvil."
+        },
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Chicha de la retaguardia y arruinan su ejecución."
+        }
+      ]
+    },
+    {
+      "id": "cirrus",
+      "name": "Cirrus",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Cirrus durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Gan & Mo",
+          "reason": "Su enorme alcance y ráfaga desde fuera de la zona de amenaza castigan a Cirrus antes de que pueda iniciar."
+        },
+        {
+          "hero_name": "Lady Zhen",
+          "reason": "Sus congelaciones y control en área detienen los desplazamientos de Cirrus y lo dejan expuesto a la ráfaga del equipo."
+        }
+      ]
+    },
+    {
+      "id": "consort_yu",
+      "name": "Consort Yu",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Consort Yu de la retaguardia y arruinan su ejecución."
+        },
+        {
+          "hero_name": "Mozi",
+          "reason": "Su poke, aturdimientos a distancia y control en área interrumpen a Consort Yu antes de que complete la entrada."
+        },
+        {
+          "hero_name": "Garo",
+          "reason": "Su alcance superior, ralentizaciones y daño sostenido permiten kitear a Consort Yu y desgastarlo antes de que llegue."
+        }
+      ]
+    },
+    {
+      "id": "da_qiao",
+      "name": "Da Qiao",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Athena",
+          "reason": "Sus escudos, embestidas y presión continua castigan a Da Qiao cuando depende de entrar y salir con una rotación."
+        },
+        {
+          "hero_name": "Kaizer",
+          "reason": "Su Ultimate reduce el daño recibido y potencia el duelo, permitiéndole atravesar la ráfaga de Da Qiao y eliminarlo cuerpo a cuerpo."
+        },
+        {
+          "hero_name": "Li Xin",
+          "reason": "Su forma a distancia puede desgastar a Da Qiao, mientras su forma cuerpo a cuerpo resiste y castiga las entradas."
+        }
+      ]
+    },
+    {
+      "id": "daji",
+      "name": "Daji",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Guan Yu",
+          "reason": "Sus cargas, empujes y gran movilidad interrumpen la canalización o posicionamiento de Daji y lo expulsan de la pelea."
+        },
+        {
+          "hero_name": "Kaizer",
+          "reason": "Su Ultimate reduce el daño recibido y potencia el duelo, permitiéndole atravesar la ráfaga de Daji y eliminarlo cuerpo a cuerpo."
+        },
+        {
+          "hero_name": "Lu Bu",
+          "reason": "Su daño verdadero y curación en peleas largas atraviesan la armadura y el aguante de Daji."
+        }
+      ]
+    },
+    {
+      "id": "dharma",
+      "name": "Dharma",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Dolia",
+          "reason": "Su curación y reinicio de Ultimate permiten que su equipo repita la habilidad clave que frena a Dharma."
+        },
+        {
+          "hero_name": "Jing",
+          "reason": "Sus múltiples desplazamientos y daño desde reflejos evitan el control frontal de Dharma y atacan sus ángulos débiles."
+        },
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Dharma durante la entrada y le impide completar su combo o escapar."
+        }
+      ]
+    },
+    {
+      "id": "di_renjie",
+      "name": "Di Renjie",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Garo",
+          "reason": "Su alcance superior, ralentizaciones y daño sostenido permiten kitear a Di Renjie y desgastarlo antes de que llegue."
+        },
+        {
+          "hero_name": "Mozi",
+          "reason": "Su poke, aturdimientos a distancia y control en área interrumpen a Di Renjie antes de que complete la entrada."
+        },
+        {
+          "hero_name": "Kui",
+          "reason": "Su gancho saca a Di Renjie de posición y lo obliga a pelear lejos de su equipo o de su zona segura."
+        }
+      ]
+    },
+    {
+      "id": "dian_wei",
+      "name": "Dian Wei",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Dyadia",
+          "reason": "Su curación, debilitaciones y apoyo móvil reducen el daño efectivo de Dian Wei y protegen al objetivo que intenta ejecutar."
+        },
+        {
+          "hero_name": "Yaria",
+          "reason": "Al unirse a un aliado aporta escudo y control sin quedar expuesta, negando la ejecución que busca Dian Wei."
+        },
+        {
+          "hero_name": "Zhuangzi",
+          "reason": "Su limpieza grupal y resistencia al control anulan la principal herramienta de iniciación o bloqueo de Dian Wei."
+        }
+      ]
+    },
+    {
+      "id": "diaochan",
+      "name": "Diaochan",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Angela",
+          "reason": "Su inmovilización seguida de una ráfaga muy alta elimina a Diaochan antes de que pueda sostenerse o completar su combo."
+        },
+        {
+          "hero_name": "Butterfly",
+          "reason": "Su ráfaga y reinicios tras una eliminación permiten rematar a Diaochan cuando queda expuesto después de usar sus recursos defensivos."
+        },
+        {
+          "hero_name": "Dr Bian",
+          "reason": "Su veneno, curación y daño acumulativo superan a Diaochan en intercambios prolongados y reducen el valor de su sustain."
+        }
+      ]
+    },
+    {
+      "id": "dolia",
+      "name": "Dolia",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Dolia en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Guiguzi",
+          "reason": "Su camuflaje, aceleración y atracción en área aíslan a Dolia o separan al aliado que intenta proteger."
+        },
+        {
+          "hero_name": "Gao Changgong",
+          "reason": "Su camuflaje y ráfaga permiten alcanzar a Dolia desde la niebla y eliminarlo antes de que se reposicione."
+        }
+      ]
+    },
+    {
+      "id": "donghuang",
+      "name": "Donghuang",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Garo",
+          "reason": "Su alcance superior, ralentizaciones y daño sostenido permiten kitear a Donghuang y desgastarlo antes de que llegue."
+        },
+        {
+          "hero_name": "Shouyue",
+          "reason": "Su alcance extremo y visión permiten desgastar a Donghuang antes de la pelea y castigarlo al aproximarse."
+        },
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Donghuang y evitan intercambios frontales."
+        }
+      ]
+    },
+    {
+      "id": "dr_bian",
+      "name": "Dr Bian",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Yang Jian",
+          "reason": "Su sustain, daño verdadero y persecución castigan a Dr Bian en peleas largas y reducen su capacidad de escapar."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Dr Bian en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Mai Shiranui",
+          "reason": "Su movilidad, empujes y ráfaga desde ángulos laterales alcanzan a Dr Bian antes de que prepare su zona."
+        }
+      ]
+    },
+    {
+      "id": "dun",
+      "name": "Dun",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Han Xin",
+          "reason": "Su movilidad extrema, invasión y control breve evitan que Dun imponga una pelea frontal y lo castigan por el mapa."
+        },
+        {
+          "hero_name": "Li Bai",
+          "reason": "Sus entradas rápidas, invulnerabilidad temporal y retorno al punto de origen evitan que Dun lo fije con facilidad."
+        },
+        {
+          "hero_name": "Wukong",
+          "reason": "Su camuflaje, control y golpes críticos permiten emboscar a Dun antes de que active su plan de pelea."
+        }
+      ]
+    },
+    {
+      "id": "dyadia",
+      "name": "Dyadia",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Dyadia en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Guiguzi",
+          "reason": "Su camuflaje, aceleración y atracción en área aíslan a Dyadia o separan al aliado que intenta proteger."
+        },
+        {
+          "hero_name": "Gao Changgong",
+          "reason": "Su camuflaje y ráfaga permiten alcanzar a Dyadia desde la niebla y eliminarlo antes de que se reposicione."
+        }
+      ]
+    },
+    {
+      "id": "erin",
+      "name": "Erin",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Dun",
+          "reason": "Sus escudos, control encadenado y resistencia le permiten absorber la entrada de Erin y devolver daño."
+        },
+        {
+          "hero_name": "Garo",
+          "reason": "Su alcance superior, ralentizaciones y daño sostenido permiten kitear a Erin y desgastarlo antes de que llegue."
+        },
+        {
+          "hero_name": "Mozi",
+          "reason": "Su poke, aturdimientos a distancia y control en área interrumpen a Erin antes de que complete la entrada."
+        }
+      ]
+    },
+    {
+      "id": "fang",
+      "name": "Fang",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Dun",
+          "reason": "Sus escudos, control encadenado y resistencia le permiten absorber la entrada de Fang y devolver daño."
+        },
+        {
+          "hero_name": "Garo",
+          "reason": "Su alcance superior, ralentizaciones y daño sostenido permiten kitear a Fang y desgastarlo antes de que llegue."
+        },
+        {
+          "hero_name": "Mozi",
+          "reason": "Su poke, aturdimientos a distancia y control en área interrumpen a Fang antes de que complete la entrada."
+        }
+      ]
+    },
+    {
+      "id": "feyd",
+      "name": "Feyd",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Feyd durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Feyd incluso durante una entrada muy móvil."
+        },
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Feyd de la retaguardia y arruinan su ejecución."
+        }
+      ]
+    },
+    {
+      "id": "flowborn_marksman",
+      "name": "Flowborn (Marksman)",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Flowborn (Marksman) de la retaguardia y arruinan su ejecución."
+        },
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Flowborn (Marksman) durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Mozi",
+          "reason": "Su poke, aturdimientos a distancia y control en área interrumpen a Flowborn (Marksman) antes de que complete la entrada."
+        }
+      ]
+    },
+    {
+      "id": "fuzi",
+      "name": "Fuzi",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Da Qiao",
+          "reason": "Sus silencios, aceleraciones y retirada global desarman la iniciación de Fuzi y niegan peleas prolongadas."
+        },
+        {
+          "hero_name": "Arli",
+          "reason": "Su movilidad constante y bloqueo de proyectiles permiten kitear a Fuzi y evitar sus habilidades clave."
+        },
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Fuzi y evitan intercambios frontales."
+        }
+      ]
+    },
+    {
+      "id": "gan_mo",
+      "name": "Gan & Mo",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Butterfly",
+          "reason": "Su ráfaga y reinicios tras una eliminación permiten rematar a Gan & Mo cuando queda expuesto después de usar sus recursos defensivos."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Gan & Mo desde larga distancia y no le dan espacio para reposicionarse."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Gan & Mo en la retaguardia, negando sustain y escape."
+        }
+      ]
+    },
+    {
+      "id": "gao",
+      "name": "Gao",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Sima Yi",
+          "reason": "Su salto hacia fuentes de magia, silencio y ráfaga le permiten entrar directamente sobre Gao y cortar su lanzamiento."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Gao desde larga distancia y no le dan espacio para reposicionarse."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Gao en la retaguardia, negando sustain y escape."
+        }
+      ]
+    },
+    {
+      "id": "gao_changgong",
+      "name": "Gao Changgong",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Gao Changgong durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Gao Changgong incluso durante una entrada muy móvil."
+        },
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Gao Changgong de la retaguardia y arruinan su ejecución."
+        }
+      ]
+    },
+    {
+      "id": "garo",
+      "name": "Garo",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Gao Changgong",
+          "reason": "Su camuflaje y ráfaga permiten alcanzar a Garo desde la niebla y eliminarlo antes de que se reposicione."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Garo desde larga distancia y no le dan espacio para reposicionarse."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Garo en la retaguardia, negando sustain y escape."
+        }
+      ]
+    },
+    {
+      "id": "guan_yu",
+      "name": "Guan Yu",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Wang Zhaojun",
+          "reason": "Sus ralentizaciones, congelación y gran zona de Ultimate bloquean las rutas de movilidad de Guan Yu."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Guan Yu incluso durante una entrada muy móvil."
+        },
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Guan Yu durante la entrada y le impide completar su combo o escapar."
+        }
+      ]
+    },
+    {
+      "id": "guiguzi",
+      "name": "Guiguzi",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Zhuangzi",
+          "reason": "Su limpieza grupal y resistencia al control anulan la principal herramienta de iniciación o bloqueo de Guiguzi."
+        },
+        {
+          "hero_name": "Da Qiao",
+          "reason": "Sus silencios, aceleraciones y retirada global desarman la iniciación de Guiguzi y niegan peleas prolongadas."
+        },
+        {
+          "hero_name": "Annette",
+          "reason": "Su barrera definitiva, empuje y protección con escudos cortan la iniciación de Guiguzi y separan la pelea."
+        }
+      ]
+    },
+    {
+      "id": "han_xin",
+      "name": "Han Xin",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Agudo",
+          "reason": "Su control de zona con criaturas, curación y presión sostenida dificulta que Han Xin encuentre una entrada limpia o gane intercambios cortos."
+        },
+        {
+          "hero_name": "Alessio",
+          "reason": "Su movilidad aérea y daño a distancia le permiten esquivar la entrada de Han Xin y castigarlo mientras intenta cerrar distancia."
+        },
+        {
+          "hero_name": "Erin",
+          "reason": "Su daño mágico sostenido y movilidad castigan a Han Xin incluso cuando acumula defensa física o intenta entrar en línea recta."
+        }
+      ]
+    },
+    {
+      "id": "haya",
+      "name": "Haya",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Sima Yi",
+          "reason": "Su salto hacia fuentes de magia, silencio y ráfaga le permiten entrar directamente sobre Haya y cortar su lanzamiento."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Haya en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Haya desde larga distancia y no le dan espacio para reposicionarse."
+        }
+      ]
+    },
+    {
+      "id": "heino",
+      "name": "Heino",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Butterfly",
+          "reason": "Su ráfaga y reinicios tras una eliminación permiten rematar a Heino cuando queda expuesto después de usar sus recursos defensivos."
+        },
+        {
+          "hero_name": "Dharma",
+          "reason": "Su empuje contra muros, reducción de defensa y ráfaga castigan a Heino cuando se aproxima o pelea en espacios cerrados."
+        },
+        {
+          "hero_name": "Lu Bu",
+          "reason": "Su daño verdadero y curación en peleas largas atraviesan la armadura y el aguante de Heino."
+        }
+      ]
+    },
+    {
+      "id": "hou_yi",
+      "name": "Hou Yi",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Agudo",
+          "reason": "Su control de zona con criaturas, curación y presión sostenida dificulta que Hou Yi encuentre una entrada limpia o gane intercambios cortos."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Hou Yi desde larga distancia y no le dan espacio para reposicionarse."
+        },
+        {
+          "hero_name": "Gao Changgong",
+          "reason": "Su camuflaje y ráfaga permiten alcanzar a Hou Yi desde la niebla y eliminarlo antes de que se reposicione."
+        }
+      ]
+    },
+    {
+      "id": "huang_zhong",
+      "name": "Huang Zhong",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Huang Zhong desde larga distancia y no le dan espacio para reposicionarse."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Huang Zhong en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Kui",
+          "reason": "Su gancho saca a Huang Zhong de posición y lo obliga a pelear lejos de su equipo o de su zona segura."
+        }
+      ]
+    },
+    {
+      "id": "jing",
+      "name": "Jing",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Angela",
+          "reason": "Su inmovilización seguida de una ráfaga muy alta elimina a Jing antes de que pueda sostenerse o completar su combo."
+        },
+        {
+          "hero_name": "Daji",
+          "reason": "Su control dirigido y combo explosivo castigan a Jing en cuanto entra en rango, sin darle tiempo para reaccionar."
+        },
+        {
+          "hero_name": "Gan & Mo",
+          "reason": "Su enorme alcance y ráfaga desde fuera de la zona de amenaza castigan a Jing antes de que pueda iniciar."
+        }
+      ]
+    },
+    {
+      "id": "kaizer",
+      "name": "Kaizer",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Kaizer durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Kui",
+          "reason": "Su gancho saca a Kaizer de posición y lo obliga a pelear lejos de su equipo o de su zona segura."
+        },
+        {
+          "hero_name": "Sun Bin",
+          "reason": "Su aceleración, silencio y recuperación de vida tras el daño ayudan al equipo a sobrevivir la ráfaga de Kaizer y retirarse."
+        }
+      ]
+    },
+    {
+      "id": "kongming",
+      "name": "Kongming",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Allain",
+          "reason": "Su daño mixto y verdadero, junto con su invulnerabilidad temporal, atraviesa la resistencia de Kongming y gana duelos prolongados."
+        },
+        {
+          "hero_name": "Biron",
+          "reason": "Su fuerte fase de líneas, escudo y daño de corta distancia castigan a Kongming antes de que alcance sus picos."
+        },
+        {
+          "hero_name": "Wuyan",
+          "reason": "Su petrificación y daño explosivo castigan a Kongming cuando entra en alcance y cortan su combo."
+        }
+      ]
+    },
+    {
+      "id": "kui",
+      "name": "Kui",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Zhuangzi",
+          "reason": "Su limpieza grupal y resistencia al control anulan la principal herramienta de iniciación o bloqueo de Kui."
+        },
+        {
+          "hero_name": "Da Qiao",
+          "reason": "Sus silencios, aceleraciones y retirada global desarman la iniciación de Kui y niegan peleas prolongadas."
+        },
+        {
+          "hero_name": "Arli",
+          "reason": "Su movilidad constante y bloqueo de proyectiles permiten kitear a Kui y evitar sus habilidades clave."
+        }
+      ]
+    },
+    {
+      "id": "lady_sun",
+      "name": "Lady Sun",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Garo",
+          "reason": "Su alcance superior, ralentizaciones y daño sostenido permiten kitear a Lady Sun y desgastarlo antes de que llegue."
+        },
+        {
+          "hero_name": "Mozi",
+          "reason": "Su poke, aturdimientos a distancia y control en área interrumpen a Lady Sun antes de que complete la entrada."
+        },
+        {
+          "hero_name": "Kui",
+          "reason": "Su gancho saca a Lady Sun de posición y lo obliga a pelear lejos de su equipo o de su zona segura."
+        }
+      ]
+    },
+    {
+      "id": "lady_zhen",
+      "name": "Lady Zhen",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Charlotte",
+          "reason": "Sus desplazamientos, reducción de daño y control repetido le permiten entrar sobre Lady Zhen sin recibir toda su respuesta."
+        },
+        {
+          "hero_name": "Liu Bei",
+          "reason": "Su daño explosivo a corta distancia, escudo y resistencia al control castigan a Lady Zhen cuando intenta mantener una zona estática."
+        },
+        {
+          "hero_name": "Luna",
+          "reason": "Sus reinicios de desplazamiento le permiten rodear el control frontal de Lady Zhen y mantener daño constante sin ser fijada."
+        }
+      ]
+    },
+    {
+      "id": "lam",
+      "name": "Lam",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Erin",
+          "reason": "Su daño mágico sostenido y movilidad castigan a Lam incluso cuando acumula defensa física o intenta entrar en línea recta."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Lam incluso durante una entrada muy móvil."
+        },
+        {
+          "hero_name": "Luara",
+          "reason": "Su daño sostenido, movilidad y presión anti-entrada castigan a Lam mientras intenta alcanzar la retaguardia."
+        }
+      ]
+    },
+    {
+      "id": "li_bai",
+      "name": "Li Bai",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Garo",
+          "reason": "Su alcance superior, ralentizaciones y daño sostenido permiten kitear a Li Bai y desgastarlo antes de que llegue."
+        },
+        {
+          "hero_name": "Mozi",
+          "reason": "Su poke, aturdimientos a distancia y control en área interrumpen a Li Bai antes de que complete la entrada."
+        },
+        {
+          "hero_name": "Shi",
+          "reason": "Su control de desplazamiento obliga a Li Bai a moverse fuera de posición y corta sus entradas o escapes."
+        }
+      ]
+    },
+    {
+      "id": "li_xin",
+      "name": "Li Xin",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Cai Yan",
+          "reason": "Su curación constante y control breve neutralizan el daño sostenido de Li Xin y alargan la pelea a favor de su equipo."
+        },
+        {
+          "hero_name": "Da Qiao",
+          "reason": "Sus silencios, aceleraciones y retirada global desarman la iniciación de Li Xin y niegan peleas prolongadas."
+        },
+        {
+          "hero_name": "Guiguzi",
+          "reason": "Su camuflaje, aceleración y atracción en área aíslan a Li Xin o separan al aliado que intenta proteger."
+        }
+      ]
+    },
+    {
+      "id": "lian_po",
+      "name": "Lian Po",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Jing",
+          "reason": "Sus múltiples desplazamientos y daño desde reflejos evitan el control frontal de Lian Po y atacan sus ángulos débiles."
+        },
+        {
+          "hero_name": "Li Bai",
+          "reason": "Sus entradas rápidas, invulnerabilidad temporal y retorno al punto de origen evitan que Lian Po lo fije con facilidad."
+        },
+        {
+          "hero_name": "Ukyo Tachibana",
+          "reason": "Su poke de corto alcance, aturdimiento y ráfaga castigan a Lian Po sin comprometerse en una pelea larga."
+        }
+      ]
+    },
+    {
+      "id": "liang",
+      "name": "Liang",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Li Xin",
+          "reason": "Su forma a distancia puede desgastar a Liang, mientras su forma cuerpo a cuerpo resiste y castiga las entradas."
+        },
+        {
+          "hero_name": "Mayene",
+          "reason": "Sus combos de movilidad y control acceden a la retaguardia de Liang y no le permiten mantener una distancia segura."
+        },
+        {
+          "hero_name": "Mulan",
+          "reason": "Su silencio, reducción de daño y cambio de formas castigan a Liang cuando se acerca y le impiden lanzar su rotación."
+        }
+      ]
+    },
+    {
+      "id": "liu_bang",
+      "name": "Liu Bang",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Liu Bang en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Zhuangzi",
+          "reason": "Su limpieza grupal y resistencia al control anulan la principal herramienta de iniciación o bloqueo de Liu Bang."
+        },
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Liu Bang y evitan intercambios frontales."
+        }
+      ]
+    },
+    {
+      "id": "liu_bei",
+      "name": "Liu Bei",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Dyadia",
+          "reason": "Su curación, debilitaciones y apoyo móvil reducen el daño efectivo de Liu Bei y protegen al objetivo que intenta ejecutar."
+        },
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Liu Bei durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Garo",
+          "reason": "Su alcance superior, ralentizaciones y daño sostenido permiten kitear a Liu Bei y desgastarlo antes de que llegue."
+        }
+      ]
+    },
+    {
+      "id": "liu_shan",
+      "name": "Liu Shan",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Li Bai",
+          "reason": "Sus entradas rápidas, invulnerabilidad temporal y retorno al punto de origen evitan que Liu Shan lo fije con facilidad."
+        },
+        {
+          "hero_name": "Zhuangzi",
+          "reason": "Su limpieza grupal y resistencia al control anulan la principal herramienta de iniciación o bloqueo de Liu Shan."
+        },
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Liu Shan y evitan intercambios frontales."
+        }
+      ]
+    },
+    {
+      "id": "lu_bu",
+      "name": "Lu Bu",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Han Xin",
+          "reason": "Su movilidad extrema, invasión y control breve evitan que Lu Bu imponga una pelea frontal y lo castigan por el mapa."
+        },
+        {
+          "hero_name": "Lam",
+          "reason": "Su movilidad, arrastre y daño de ejecución permiten rodear a Lu Bu y castigarlo cuando baja de vida."
+        },
+        {
+          "hero_name": "Pei",
+          "reason": "Su presión temprana, movilidad y cambio entre rango y cuerpo a cuerpo invaden a Lu Bu antes de que escale."
+        }
+      ]
+    },
+    {
+      "id": "luban_no_7",
+      "name": "Luban No.7",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Lian Po",
+          "reason": "Su inmunidad al control durante habilidades y cadena de derribos cortan la movilidad de Luban No.7 y protegen la retaguardia."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Luban No.7 desde larga distancia y no le dan espacio para reposicionarse."
+        },
+        {
+          "hero_name": "Gao Changgong",
+          "reason": "Su camuflaje y ráfaga permiten alcanzar a Luban No.7 desde la niebla y eliminarlo antes de que se reposicione."
+        }
+      ]
+    },
+    {
+      "id": "luna",
+      "name": "Luna",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Athena",
+          "reason": "Sus escudos, embestidas y presión continua castigan a Luna cuando depende de entrar y salir con una rotación."
+        },
+        {
+          "hero_name": "Augran",
+          "reason": "Su daño sostenido, ejecución y gran aguante superan a Luna en peleas extendidas y reducen su margen de escape."
+        },
+        {
+          "hero_name": "Fuzi",
+          "reason": "Su Ultimate encierra a Luna en un área pequeña y su reducción de daño le permite ganar el duelo sin dejarlo escapar."
+        }
+      ]
+    },
+    {
+      "id": "mai_shiranui",
+      "name": "Mai Shiranui",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Alessio",
+          "reason": "Su movilidad aérea y daño a distancia le permiten esquivar la entrada de Mai Shiranui y castigarlo mientras intenta cerrar distancia."
+        },
+        {
+          "hero_name": "Charlotte",
+          "reason": "Sus desplazamientos, reducción de daño y control repetido le permiten entrar sobre Mai Shiranui sin recibir toda su respuesta."
+        },
+        {
+          "hero_name": "Di Renjie",
+          "reason": "Su purificación propia, control a distancia y daño sostenido le permiten sobrevivir al combo de Mai Shiranui y responder."
+        }
+      ]
+    },
+    {
+      "id": "marco_polo",
+      "name": "Marco Polo",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Lian Po",
+          "reason": "Su inmunidad al control durante habilidades y cadena de derribos cortan la movilidad de Marco Polo y protegen la retaguardia."
+        },
+        {
+          "hero_name": "Liu Bang",
+          "reason": "Su escudo y llegada global convierten el intento de ejecución de Marco Polo en una pelea desfavorable de dos contra uno."
+        },
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Marco Polo de la retaguardia y arruinan su ejecución."
+        }
+      ]
+    },
+    {
+      "id": "mayene",
+      "name": "Mayene",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Yaria",
+          "reason": "Al unirse a un aliado aporta escudo y control sin quedar expuesta, negando la ejecución que busca Mayene."
+        },
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Mayene durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Fuzi",
+          "reason": "Su Ultimate encierra a Mayene en un área pequeña y su reducción de daño le permite ganar el duelo sin dejarlo escapar."
+        }
+      ]
+    },
+    {
+      "id": "meng_ya",
+      "name": "Meng Ya",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Liu Bang",
+          "reason": "Su escudo y llegada global convierten el intento de ejecución de Meng Ya en una pelea desfavorable de dos contra uno."
+        },
+        {
+          "hero_name": "Kui",
+          "reason": "Su gancho saca a Meng Ya de posición y lo obliga a pelear lejos de su equipo o de su zona segura."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Meng Ya desde larga distancia y no le dan espacio para reposicionarse."
+        }
+      ]
+    },
+    {
+      "id": "menki",
+      "name": "Menki",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Ming",
+          "reason": "Su vínculo amplifica el daño y la supervivencia de un aliado, haciendo que el objetivo de Menki sea mucho más difícil de ejecutar."
+        },
+        {
+          "hero_name": "Sima Yi",
+          "reason": "Su salto hacia fuentes de magia, silencio y ráfaga le permiten entrar directamente sobre Menki y cortar su lanzamiento."
+        },
+        {
+          "hero_name": "Zhuangzi",
+          "reason": "Su limpieza grupal y resistencia al control anulan la principal herramienta de iniciación o bloqueo de Menki."
+        }
+      ]
+    },
+    {
+      "id": "mi_yue",
+      "name": "Mi Yue",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Dharma",
+          "reason": "Su empuje contra muros, reducción de defensa y ráfaga castigan a Mi Yue cuando se aproxima o pelea en espacios cerrados."
+        },
+        {
+          "hero_name": "Dian Wei",
+          "reason": "Su limpieza de control, daño verdadero y escalado en peleas largas atraviesan las defensas de Mi Yue."
+        },
+        {
+          "hero_name": "Guan Yu",
+          "reason": "Sus cargas, empujes y gran movilidad interrumpen la canalización o posicionamiento de Mi Yue y lo expulsan de la pelea."
+        }
+      ]
+    },
+    {
+      "id": "milady",
+      "name": "Milady",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Allain",
+          "reason": "Su daño mixto y verdadero, junto con su invulnerabilidad temporal, atraviesa la resistencia de Milady y gana duelos prolongados."
+        },
+        {
+          "hero_name": "Fuzi",
+          "reason": "Su Ultimate encierra a Milady en un área pequeña y su reducción de daño le permite ganar el duelo sin dejarlo escapar."
+        },
+        {
+          "hero_name": "Haya",
+          "reason": "Su movilidad y presión de ráfaga alcanzan a Milady desde ángulos laterales, evitando su zona frontal de control."
+        }
+      ]
+    },
+    {
+      "id": "ming",
+      "name": "Ming",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Guiguzi",
+          "reason": "Su camuflaje, aceleración y atracción en área aíslan a Ming o separan al aliado que intenta proteger."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Ming en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Gao Changgong",
+          "reason": "Su camuflaje y ráfaga permiten alcanzar a Ming desde la niebla y eliminarlo antes de que se reposicione."
+        }
+      ]
+    },
+    {
+      "id": "mozi",
+      "name": "Mozi",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Dolia",
+          "reason": "Su curación y reinicio de Ultimate permiten que su equipo repita la habilidad clave que frena a Mozi."
+        },
+        {
+          "hero_name": "Guiguzi",
+          "reason": "Su camuflaje, aceleración y atracción en área aíslan a Mozi o separan al aliado que intenta proteger."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Mozi en la retaguardia, negando sustain y escape."
+        }
+      ]
+    },
+    {
+      "id": "mulan",
+      "name": "Mulan",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Diaochan",
+          "reason": "Sus desplazamientos continuos, invulnerabilidad breve y daño verdadero hacen fallar habilidades de Mulan y ganan la pelea larga."
+        },
+        {
+          "hero_name": "Heino",
+          "reason": "Su poke seguro, control de espacio y capacidad de revertir daño le permiten sobrevivir al pico de Mulan y desgastarlo."
+        },
+        {
+          "hero_name": "Hou Yi",
+          "reason": "Su daño sostenido, control global y velocidad de ataque castigan a Mulan cuando entra de frente o queda fijado."
+        }
+      ]
+    },
+    {
+      "id": "musashi",
+      "name": "Musashi",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Dyadia",
+          "reason": "Su curación, debilitaciones y apoyo móvil reducen el daño efectivo de Musashi y protegen al objetivo que intenta ejecutar."
+        },
+        {
+          "hero_name": "Sun Bin",
+          "reason": "Su aceleración, silencio y recuperación de vida tras el daño ayudan al equipo a sobrevivir la ráfaga de Musashi y retirarse."
+        },
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Musashi durante la entrada y le impide completar su combo o escapar."
+        }
+      ]
+    },
+    {
+      "id": "nakoruru",
+      "name": "Nakoruru",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Diaochan",
+          "reason": "Sus desplazamientos continuos, invulnerabilidad breve y daño verdadero hacen fallar habilidades de Nakoruru y ganan la pelea larga."
+        },
+        {
+          "hero_name": "Fang",
+          "reason": "Sus marcas, trampas y fuerte daño de objetivo único revelan la ruta de Nakoruru y lo castigan al comprometerse."
+        },
+        {
+          "hero_name": "Garo",
+          "reason": "Su alcance superior, ralentizaciones y daño sostenido permiten kitear a Nakoruru y desgastarlo antes de que llegue."
+        }
+      ]
+    },
+    {
+      "id": "nezha",
+      "name": "Nezha",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Fuzi",
+          "reason": "Su Ultimate encierra a Nezha en un área pequeña y su reducción de daño le permite ganar el duelo sin dejarlo escapar."
+        },
+        {
+          "hero_name": "Da Qiao",
+          "reason": "Sus silencios, aceleraciones y retirada global desarman la iniciación de Nezha y niegan peleas prolongadas."
+        },
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Nezha de la retaguardia y arruinan su ejecución."
+        }
+      ]
+    },
+    {
+      "id": "nuwa",
+      "name": "Nuwa",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Liu Bei",
+          "reason": "Su daño explosivo a corta distancia, escudo y resistencia al control castigan a Nuwa cuando intenta mantener una zona estática."
+        },
+        {
+          "hero_name": "Mayene",
+          "reason": "Sus combos de movilidad y control acceden a la retaguardia de Nuwa y no le permiten mantener una distancia segura."
+        },
+        {
+          "hero_name": "Mulan",
+          "reason": "Su silencio, reducción de daño y cambio de formas castigan a Nuwa cuando se acerca y le impiden lanzar su rotación."
+        }
+      ]
+    },
+    {
+      "id": "pei",
+      "name": "Pei",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Gan & Mo",
+          "reason": "Su enorme alcance y ráfaga desde fuera de la zona de amenaza castigan a Pei antes de que pueda iniciar."
+        },
+        {
+          "hero_name": "Meng Ya",
+          "reason": "Su fuego sostenido y daño de área castigan a Pei durante la entrada y fuerzan peleas largas desfavorables."
+        },
+        {
+          "hero_name": "Milady",
+          "reason": "Sus autómatas y presión de torres obligan a Pei a defender, reduciendo su capacidad de rotar o buscar emboscadas."
+        }
+      ]
+    },
+    {
+      "id": "sakeer",
+      "name": "Sakeer",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Haya",
+          "reason": "Su movilidad y presión de ráfaga alcanzan a Sakeer desde ángulos laterales, evitando su zona frontal de control."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Sakeer en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Guiguzi",
+          "reason": "Su camuflaje, aceleración y atracción en área aíslan a Sakeer o separan al aliado que intenta proteger."
+        }
+      ]
+    },
+    {
+      "id": "shangguan",
+      "name": "Shangguan",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Augran",
+          "reason": "Su daño sostenido, ejecución y gran aguante superan a Shangguan en peleas extendidas y reducen su margen de escape."
+        },
+        {
+          "hero_name": "Biron",
+          "reason": "Su fuerte fase de líneas, escudo y daño de corta distancia castigan a Shangguan antes de que alcance sus picos."
+        },
+        {
+          "hero_name": "Musashi",
+          "reason": "Su Ultimate fija a Shangguan, corta su recuperación y le impide escapar durante el duelo."
+        }
+      ]
+    },
+    {
+      "id": "shi",
+      "name": "Shi",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Athena",
+          "reason": "Sus escudos, embestidas y presión continua castigan a Shi cuando depende de entrar y salir con una rotación."
+        },
+        {
+          "hero_name": "Zhuangzi",
+          "reason": "Su limpieza grupal y resistencia al control anulan la principal herramienta de iniciación o bloqueo de Shi."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Shi desde larga distancia y no le dan espacio para reposicionarse."
+        }
+      ]
+    },
+    {
+      "id": "shouyue",
+      "name": "Shouyue",
+      "role": "Farm Lane",
+      "counters": [
+        {
+          "hero_name": "Liu Bang",
+          "reason": "Su escudo y llegada global convierten el intento de ejecución de Shouyue en una pelea desfavorable de dos contra uno."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Shouyue desde larga distancia y no le dan espacio para reposicionarse."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Shouyue en la retaguardia, negando sustain y escape."
+        }
+      ]
+    },
+    {
+      "id": "sima_yi",
+      "name": "Sima Yi",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Alessio",
+          "reason": "Su movilidad aérea y daño a distancia le permiten esquivar la entrada de Sima Yi y castigarlo mientras intenta cerrar distancia."
+        },
+        {
+          "hero_name": "Arli",
+          "reason": "Su movilidad constante y bloqueo de proyectiles permiten kitear a Sima Yi y evitar sus habilidades clave."
+        },
+        {
+          "hero_name": "Lady Zhen",
+          "reason": "Sus congelaciones y control en área detienen los desplazamientos de Sima Yi y lo dejan expuesto a la ráfaga del equipo."
+        }
+      ]
+    },
+    {
+      "id": "sun_bin",
+      "name": "Sun Bin",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Sun Bin en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Guiguzi",
+          "reason": "Su camuflaje, aceleración y atracción en área aíslan a Sun Bin o separan al aliado que intenta proteger."
+        },
+        {
+          "hero_name": "Da Qiao",
+          "reason": "Sus silencios, aceleraciones y retirada global desarman la iniciación de Sun Bin y niegan peleas prolongadas."
+        }
+      ]
+    },
+    {
+      "id": "sun_ce",
+      "name": "Sun Ce",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Fuzi",
+          "reason": "Su Ultimate encierra a Sun Ce en un área pequeña y su reducción de daño le permite ganar el duelo sin dejarlo escapar."
+        },
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Sun Ce durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Da Qiao",
+          "reason": "Sus silencios, aceleraciones y retirada global desarman la iniciación de Sun Ce y niegan peleas prolongadas."
+        }
+      ]
+    },
+    {
+      "id": "ukyo_tachibana",
+      "name": "Ukyo Tachibana",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Di Renjie",
+          "reason": "Su purificación propia, control a distancia y daño sostenido le permiten sobrevivir al combo de Ukyo Tachibana y responder."
+        },
+        {
+          "hero_name": "Kongming",
+          "reason": "Sus desplazamientos, marcas y ejecución castigan a Ukyo Tachibana cuando queda con poca vida después de iniciar."
+        },
+        {
+          "hero_name": "Luban No.7",
+          "reason": "Su pasiva de ráfagas y daño proporcional derrite a Ukyo Tachibana si permanece cerca o avanza de frente."
+        }
+      ]
+    },
+    {
+      "id": "umbrosa",
+      "name": "Umbrosa",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Umbrosa durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Umbrosa incluso durante una entrada muy móvil."
+        },
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Umbrosa de la retaguardia y arruinan su ejecución."
+        }
+      ]
+    },
+    {
+      "id": "wang_zhaojun",
+      "name": "Wang Zhaojun",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Sima Yi",
+          "reason": "Su salto hacia fuentes de magia, silencio y ráfaga le permiten entrar directamente sobre Wang Zhaojun y cortar su lanzamiento."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Wang Zhaojun desde larga distancia y no le dan espacio para reposicionarse."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Wang Zhaojun en la retaguardia, negando sustain y escape."
+        }
+      ]
+    },
+    {
+      "id": "wukong",
+      "name": "Wukong",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Agudo",
+          "reason": "Su control de zona con criaturas, curación y presión sostenida dificulta que Wukong encuentre una entrada limpia o gane intercambios cortos."
+        },
+        {
+          "hero_name": "Gao",
+          "reason": "Su daño de área y control cercano castigan la entrada predecible de Wukong y lo obligan a pelear dentro de su zona."
+        },
+        {
+          "hero_name": "Heino",
+          "reason": "Su poke seguro, control de espacio y capacidad de revertir daño le permiten sobrevivir al pico de Wukong y desgastarlo."
+        }
+      ]
+    },
+    {
+      "id": "wuyan",
+      "name": "Wuyan",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Lam",
+          "reason": "Su movilidad, arrastre y daño de ejecución permiten rodear a Wuyan y castigarlo cuando baja de vida."
+        },
+        {
+          "hero_name": "Ming",
+          "reason": "Su vínculo amplifica el daño y la supervivencia de un aliado, haciendo que el objetivo de Wuyan sea mucho más difícil de ejecutar."
+        },
+        {
+          "hero_name": "Pei",
+          "reason": "Su presión temprana, movilidad y cambio entre rango y cuerpo a cuerpo invaden a Wuyan antes de que escale."
+        }
+      ]
+    },
+    {
+      "id": "xiang_yu",
+      "name": "Xiang Yu",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Han Xin",
+          "reason": "Su movilidad extrema, invasión y control breve evitan que Xiang Yu imponga una pelea frontal y lo castigan por el mapa."
+        },
+        {
+          "hero_name": "Kui",
+          "reason": "Su gancho saca a Xiang Yu de posición y lo obliga a pelear lejos de su equipo o de su zona segura."
+        },
+        {
+          "hero_name": "Lam",
+          "reason": "Su movilidad, arrastre y daño de ejecución permiten rodear a Xiang Yu y castigarlo cuando baja de vida."
+        }
+      ]
+    },
+    {
+      "id": "xiao_qiao",
+      "name": "Xiao Qiao",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Liu Bei",
+          "reason": "Su daño explosivo a corta distancia, escudo y resistencia al control castigan a Xiao Qiao cuando intenta mantener una zona estática."
+        },
+        {
+          "hero_name": "Menki",
+          "reason": "Sus escudos y daño mixto le permiten absorber la ráfaga de Xiao Qiao y responder con presión constante."
+        },
+        {
+          "hero_name": "Sun Ce",
+          "reason": "Su iniciación global, control encadenado y resistencia alcanzan a Xiao Qiao desde larga distancia y no le dan espacio para reposicionarse."
+        }
+      ]
+    },
+    {
+      "id": "xuance",
+      "name": "Xuance",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Daji",
+          "reason": "Su control dirigido y combo explosivo castigan a Xuance en cuanto entra en rango, sin darle tiempo para reaccionar."
+        },
+        {
+          "hero_name": "Diaochan",
+          "reason": "Sus desplazamientos continuos, invulnerabilidad breve y daño verdadero hacen fallar habilidades de Xuance y ganan la pelea larga."
+        },
+        {
+          "hero_name": "Gao",
+          "reason": "Su daño de área y control cercano castigan la entrada predecible de Xuance y lo obligan a pelear dentro de su zona."
+        }
+      ]
+    },
+    {
+      "id": "yang_jian",
+      "name": "Yang Jian",
+      "role": "Clash Lane",
+      "counters": [
+        {
+          "hero_name": "Garo",
+          "reason": "Su alcance superior, ralentizaciones y daño sostenido permiten kitear a Yang Jian y desgastarlo antes de que llegue."
+        },
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Yang Jian y evitan intercambios frontales."
+        },
+        {
+          "hero_name": "Fuzi",
+          "reason": "Su Ultimate encierra a Yang Jian en un área pequeña y su reducción de daño le permite ganar el duelo sin dejarlo escapar."
+        }
+      ]
+    },
+    {
+      "id": "yango",
+      "name": "Yango",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Yango durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Yango incluso durante una entrada muy móvil."
+        },
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Yango de la retaguardia y arruinan su ejecución."
+        }
+      ]
+    },
+    {
+      "id": "yao",
+      "name": "Yao",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Fuzi",
+          "reason": "Su Ultimate encierra a Yao en un área pequeña y su reducción de daño le permite ganar el duelo sin dejarlo escapar."
+        },
+        {
+          "hero_name": "Donghuang",
+          "reason": "Su Ultimate de supresión fija a Yao durante la entrada y le impide completar su combo o escapar."
+        },
+        {
+          "hero_name": "Liang",
+          "reason": "Su supresión dirigida y zona de inmovilización detienen a Yao incluso durante una entrada muy móvil."
+        }
+      ]
+    },
+    {
+      "id": "yaria",
+      "name": "Yaria",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Yaria en la retaguardia, negando sustain y escape."
+        },
+        {
+          "hero_name": "Guiguzi",
+          "reason": "Su camuflaje, aceleración y atracción en área aíslan a Yaria o separan al aliado que intenta proteger."
+        },
+        {
+          "hero_name": "Zhang Fei",
+          "reason": "Sus escudos masivos y el empuje de su Ultimate separan a Yaria de la retaguardia y arruinan su ejecución."
+        }
+      ]
+    },
+    {
+      "id": "ying",
+      "name": "Ying",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Di Renjie",
+          "reason": "Su purificación propia, control a distancia y daño sostenido le permiten sobrevivir al combo de Ying y responder."
+        },
+        {
+          "hero_name": "Erin",
+          "reason": "Su daño mágico sostenido y movilidad castigan a Ying incluso cuando acumula defensa física o intenta entrar en línea recta."
+        },
+        {
+          "hero_name": "Lady Sun",
+          "reason": "Su rodamiento, alcance mejorado y ráfaga física permiten mantener distancia de Ying y castigarlo tras cada entrada."
+        }
+      ]
+    },
+    {
+      "id": "yixing",
+      "name": "Yixing",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Allain",
+          "reason": "Su daño mixto y verdadero, junto con su invulnerabilidad temporal, atraviesa la resistencia de Yixing y gana duelos prolongados."
+        },
+        {
+          "hero_name": "Dharma",
+          "reason": "Su empuje contra muros, reducción de defensa y ráfaga castigan a Yixing cuando se aproxima o pelea en espacios cerrados."
+        },
+        {
+          "hero_name": "Dian Wei",
+          "reason": "Su limpieza de control, daño verdadero y escalado en peleas largas atraviesan las defensas de Yixing."
+        }
+      ]
+    },
+    {
+      "id": "yuhuan",
+      "name": "Yuhuan",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Luna",
+          "reason": "Sus reinicios de desplazamiento le permiten rodear el control frontal de Yuhuan y mantener daño constante sin ser fijada."
+        },
+        {
+          "hero_name": "Ying",
+          "reason": "Sus combos de lanza, sustain y control le permiten sobrevivir al primer impacto de Yuhuan y dominar la pelea extendida."
+        },
+        {
+          "hero_name": "Nezha",
+          "reason": "Su reducción de curación y Ultimate global alcanzan a Yuhuan en la retaguardia, negando sustain y escape."
+        }
+      ]
+    },
+    {
+      "id": "zhang_fei",
+      "name": "Zhang Fei",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Zhuangzi",
+          "reason": "Su limpieza grupal y resistencia al control anulan la principal herramienta de iniciación o bloqueo de Zhang Fei."
+        },
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Zhang Fei y evitan intercambios frontales."
+        },
+        {
+          "hero_name": "Lu Bu",
+          "reason": "Su daño verdadero y curación en peleas largas atraviesan la armadura y el aguante de Zhang Fei."
+        }
+      ]
+    },
+    {
+      "id": "zhou_yu",
+      "name": "Zhou Yu",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Augran",
+          "reason": "Su daño sostenido, ejecución y gran aguante superan a Zhou Yu en peleas extendidas y reducen su margen de escape."
+        },
+        {
+          "hero_name": "Dian Wei",
+          "reason": "Su limpieza de control, daño verdadero y escalado en peleas largas atraviesan las defensas de Zhou Yu."
+        },
+        {
+          "hero_name": "Sima Yi",
+          "reason": "Su salto hacia fuentes de magia, silencio y ráfaga le permiten entrar directamente sobre Zhou Yu y cortar su lanzamiento."
+        }
+      ]
+    },
+    {
+      "id": "zhuangzi",
+      "name": "Zhuangzi",
+      "role": "Roamer/Support",
+      "counters": [
+        {
+          "hero_name": "Marco Polo",
+          "reason": "Su movilidad y daño verdadero basado en múltiples impactos derriten a Zhuangzi y evitan intercambios frontales."
+        },
+        {
+          "hero_name": "Lu Bu",
+          "reason": "Su daño verdadero y curación en peleas largas atraviesan la armadura y el aguante de Zhuangzi."
+        },
+        {
+          "hero_name": "Garo",
+          "reason": "Su alcance superior, ralentizaciones y daño sostenido permiten kitear a Zhuangzi y desgastarlo antes de que llegue."
+        }
+      ]
+    },
+    {
+      "id": "zilong",
+      "name": "Zilong",
+      "role": "Jungler",
+      "counters": [
+        {
+          "hero_name": "Arli",
+          "reason": "Su movilidad constante y bloqueo de proyectiles permiten kitear a Zilong y evitar sus habilidades clave."
+        },
+        {
+          "hero_name": "Fang",
+          "reason": "Sus marcas, trampas y fuerte daño de objetivo único revelan la ruta de Zilong y lo castigan al comprometerse."
+        },
+        {
+          "hero_name": "Guiguzi",
+          "reason": "Su camuflaje, aceleración y atracción en área aíslan a Zilong o separan al aliado que intenta proteger."
+        }
+      ]
+    },
+    {
+      "id": "ziya",
+      "name": "Ziya",
+      "role": "Mid Lane",
+      "counters": [
+        {
+          "hero_name": "Biron",
+          "reason": "Su fuerte fase de líneas, escudo y daño de corta distancia castigan a Ziya antes de que alcance sus picos."
+        },
+        {
+          "hero_name": "Charlotte",
+          "reason": "Sus desplazamientos, reducción de daño y control repetido le permiten entrar sobre Ziya sin recibir toda su respuesta."
+        },
+        {
+          "hero_name": "Yao",
+          "reason": "Sus múltiples desplazamientos y mitigación le permiten esquivar la habilidad clave de Ziya y contraatacar desde otro ángulo."
+        }
+      ]
+    }
+  ]
+}

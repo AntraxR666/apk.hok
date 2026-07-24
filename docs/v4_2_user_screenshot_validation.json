@@ -1,0 +1,80 @@
+[
+  {
+    "image": "WhatsApp Image 2026-07-24 at 04.52.11.jpeg",
+    "width": 1600,
+    "height": 738,
+    "mode": "DRAFT",
+    "left": [
+      "CONFIRMED",
+      "CONFIRMED",
+      "CONFIRMED",
+      "CONFIRMED",
+      "CONFIRMED"
+    ],
+    "right": [
+      "CONFIRMED",
+      "CONFIRMED",
+      "CONFIRMED",
+      "CONFIRMED",
+      "PREVIEWING"
+    ],
+    "left_scores": [
+      0.10482878151260512,
+      0.1079173669467784,
+      0.11762289915966413,
+      0.11382913165266115,
+      0.10642857142857122
+    ],
+    "right_scores": [
+      0.04950875350140053,
+      0.04694642857142859,
+      0.04610119047619063,
+      0.05404096638655469,
+      0.003682773109243694
+    ]
+  },
+  {
+    "image": "WhatsApp Image 2026-07-24 at 04.53.28.jpeg",
+    "width": 1600,
+    "height": 738,
+    "mode": "DRAFT",
+    "left": [
+      "CONFIRMED",
+      "CONFIRMED",
+      "CONFIRMED",
+      "CONFIRMED",
+      "CONFIRMED"
+    ],
+    "right": [
+      "CONFIRMED",
+      "CONFIRMED",
+      "CONFIRMED",
+      "CONFIRMED",
+      "PREVIEWING"
+    ],
+    "left_scores": [
+      0.10072689075630235,
+      0.10113375350140073,
+      0.09868277310924327,
+      0.11507878151260541,
+      0.09888445378151228
+    ],
+    "right_scores": [
+      0.06285224089635878,
+      0.061482492997198865,
+      0.05857142857142829,
+      0.07735959383753503,
+      0.033484943977591074
+    ]
+  },
+  {
+    "image": "WhatsApp Image 2026-07-24 at 04.56.53.jpeg",
+    "width": 1600,
+    "height": 738,
+    "mode": "IN_GAME",
+    "left": [],
+    "right": [],
+    "left_scores": [],
+    "right_scores": []
+  }
+]

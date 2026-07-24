@@ -1,0 +1,31 @@
+{
+  "source": {
+    "filename": "hok(1).mp4",
+    "duration_seconds": 237.521033,
+    "width": 848,
+    "height": 392,
+    "content_in_package": false
+  },
+  "timeline_seconds": {
+    "ban": [5, 30],
+    "pick": [35, 145],
+    "adjustments": [146, 160],
+    "loading": [165, 189],
+    "in_game": [190, 237.521]
+  },
+  "player": {
+    "name": "R-95",
+    "video_slot": 4,
+    "earlier_screenshot_slot": 2,
+    "policy": "row-bounded ally OCR, 4 stable frames, manual override wins"
+  },
+  "frame_120_fixture": {
+    "description": "4 allied heroes confirmed, player R-95 previewing in row 4, 4 enemies confirmed, enemy row 5 empty",
+    "left_marker_scores": [0.327, 0.193, 0.173, 0.0, 0.185],
+    "left_preview_scores": [0.0, 0.017, 0.015, 0.281, 0.055],
+    "right_marker_scores": [0.439, 0.162, 0.253, 0.199, 0.0],
+    "right_preview_scores": [0.075, 0.0, 0.0, 0.0, 0.004],
+    "expected_left": ["CONFIRMED", "CONFIRMED", "CONFIRMED", "PREVIEWING", "CONFIRMED"],
+    "expected_right": ["CONFIRMED", "CONFIRMED", "CONFIRMED", "CONFIRMED", "EMPTY"]
+  }
+}
