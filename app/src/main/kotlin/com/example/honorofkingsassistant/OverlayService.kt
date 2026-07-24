@@ -19,6 +19,7 @@ import android.view.View
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -136,12 +137,12 @@ class OverlayService : Service() {
             overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
             addView(
                 panelContent,
-                ScrollView.LayoutParams(
-                    ScrollView.LayoutParams.MATCH_PARENT,
-                    ScrollView.LayoutParams.WRAP_CONTENT
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
                 )
             )
-            layoutParams = LinearLayout.LayoutParams(
+            this.layoutParams = LinearLayout.LayoutParams(
                 maxOverlayPanelWidth(),
                 maxOverlayPanelHeight()
             )
