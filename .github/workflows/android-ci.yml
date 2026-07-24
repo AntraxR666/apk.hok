@@ -27,11 +27,15 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
       - name: Install Android SDK 33
         shell: bash
         run: |
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          command -v sdkmanager
           sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+          sdkmanager --list_installed
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
