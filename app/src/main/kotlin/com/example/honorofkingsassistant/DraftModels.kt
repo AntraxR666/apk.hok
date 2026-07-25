@@ -71,5 +71,6 @@ data class DraftVisionResult(
     val screenMode: ScreenMode,
     val subphase: DraftSubphase = DraftSubphase.UNKNOWN,
     val playerSlot: PlayerSlotDetection? = null,
-    val slotFingerprints: List<SlotPortraitFingerprint> = emptyList()
+    val slotFingerprints: List<SlotPortraitFingerprint> = emptyList(),
+    val diagnostics: VisionDiagnostics = VisionDiagnostics()
 )

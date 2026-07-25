@@ -30,11 +30,11 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Install Android SDK 33
+      - name: Install Android SDK 36
         shell: bash
         run: |
           command -v sdkmanager
-          sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;35.0.0"
           sdkmanager --list_installed
 
       - name: Make Gradle wrapper executable
@@ -51,6 +51,15 @@ jobs:
           python3 tools/test_player_pick_override_contract.py
           python3 tools/test_stage_control_contract.py
           python3 tools/test_calibration_contract.py
+          python3 tools/test_overlay_layout_params_contract.py
+          python3 tools/test_v5_build_contract.py
+          python3 tools/test_v5_background_vision_contract.py
+          python3 tools/test_v5_recognition_contract.py
+          python3 tools/test_v5_diagnostics_contract.py
+          python3 tools/test_v5_single_fgs_contract.py
+          python3 tools/test_v5_delivery_contract.py
+          python3 tools/test_v5_huawei_profile_contract.py
+          python3 tools/validate_v5.py
 
       - name: Unit tests, lint and APK
         run: ./gradlew --no-daemon clean testDebugUnitTest lintDebug assembleDebug
@@ -63,18 +72,24 @@ jobs:
           unzip -l "$APK" | grep -q 'AndroidManifest.xml'
           unzip -l "$APK" | grep -q 'classes.dex'
           unzip -l "$APK" | grep -q 'assets/hok_counters.json'
+          AAPT="$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt"
+          test -x "$AAPT"
+          "$AAPT" dump badging "$APK" | tee app-debug.badging.txt
+          grep -q "versionCode='11'" app-debug.badging.txt
+          grep -q "versionName='5.0-personal-jkm-lx3-rc1'" app-debug.badging.txt
           sha256sum "$APK" | tee app-debug.apk.sha256
 
       - name: Upload APK and reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: HoK-Draft-Assistant-V4.3-RC1
+          name: HoK-Draft-Assistant-V5-Huawei-JKM-LX3
           if-no-files-found: warn
           retention-days: 14
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app-debug.apk.sha256
+            app-debug.badging.txt
             app/build/reports/tests/testDebugUnitTest/**
             app/build/reports/lint-results-debug.html
             app/build/reports/lint-results-debug.xml

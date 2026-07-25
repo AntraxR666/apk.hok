@@ -4,18 +4,24 @@ import java.util.ArrayDeque
 
 class TemporalDraftTracker(
     private val requiredHits: Int = 2,
-    private val historySize: Int = 4
+    private val historySize: Int = 4,
+    private val minimumObservationConfidence: Double = 0.55
 ) {
     private val history = ArrayDeque<List<HeroObservation>>()
 
     init {
         require(requiredHits >= 1)
         require(historySize >= requiredHits)
+        require(minimumObservationConfidence in 0.0..1.0)
     }
 
     @Synchronized
     fun observe(frame: List<HeroObservation>): DraftSnapshot {
-        history.addLast(frame.distinctBy { it.heroName to it.side })
+        history.addLast(
+            frame
+                .filter { it.confidence >= minimumObservationConfidence }
+                .distinctBy { CounterCatalog.normalize(it.heroName) to it.side }
+        )
         while (history.size > historySize) history.removeFirst()
 
         val confirmed = history.flatten()

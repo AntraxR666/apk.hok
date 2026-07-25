@@ -35,23 +35,19 @@ class HeroPortraitMatcher(
         val templates = store.templates()
         if (templates.isEmpty()) return emptyList()
         return fingerprints.mapNotNull slotLoop@ { slot ->
-            val best = templates.asSequence()
-                .mapNotNull templateLoop@ { (normalizedHero, heroTemplates) ->
-                    val hero = catalog.heroes.firstOrNull {
-                        CounterCatalog.normalize(it.name) == normalizedHero
-                    } ?: return@templateLoop null
-                    val distance = heroTemplates.minOfOrNull { it.distance(slot.fingerprint) }
-                        ?: return@templateLoop null
-                    PortraitHeroMatch(
-                        heroName = hero.name,
-                        distance = distance,
-                        confidence = ((MATCH_THRESHOLD - distance) / MATCH_THRESHOLD)
-                            .coerceIn(0.0, 1.0) * slot.visualConfidence
-                    )
-                }
-                .minByOrNull { it.distance }
-                ?.takeIf { it.distance <= MATCH_THRESHOLD && it.confidence >= MIN_MATCH_CONFIDENCE }
-                ?: return@slotLoop null
+            val candidates = templates.mapNotNull { (normalizedHero, heroTemplates) ->
+                val hero = catalog.heroes.firstOrNull {
+                    CounterCatalog.normalize(it.name) == normalizedHero
+                } ?: return@mapNotNull null
+                val distance = heroTemplates.minOfOrNull { it.distance(slot.fingerprint) }
+                    ?: return@mapNotNull null
+                PortraitMatchCandidate(
+                    heroName = hero.name,
+                    distance = distance,
+                    visualConfidence = slot.visualConfidence
+                )
+            }
+            val best = PortraitMatchSelector.select(candidates) ?: return@slotLoop null
             HeroObservation(best.heroName, slot.side, best.confidence)
         }
     }
@@ -89,8 +85,6 @@ class HeroPortraitMatcher(
     }
 
     companion object {
-        private const val MATCH_THRESHOLD = 0.23
-        private const val MIN_MATCH_CONFIDENCE = 0.45
         private const val MIN_VISUAL_CONFIDENCE = 0.45
     }
 }

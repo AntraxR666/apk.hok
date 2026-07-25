@@ -129,8 +129,8 @@ def validate_source_contracts() -> None:
 
     gradle = (ROOT / "app/build.gradle").read_text(encoding="utf-8")
     for expected in (
-        "namespace 'com.example.honorofkingsassistant'", "compileSdk 33", "minSdk 23",
-        "targetSdk 33", "com.google.mlkit:text-recognition:16.0.1",
+        "namespace 'com.example.honorofkingsassistant'", "compileSdk 36", "minSdk 23",
+        "targetSdk 36", "com.google.mlkit:text-recognition:16.0.1",
     ):
         if expected not in gradle:
             fail(f"Configuración Gradle ausente: {expected}")

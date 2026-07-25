@@ -57,6 +57,9 @@ build = (ROOT / 'app/build.gradle').read_text(encoding='utf-8')
 require("com.google.mlkit:text-recognition:16.0.1" in build, 'Falta OCR ML Kit empaquetado')
 require('minifyEnabled true' in build, 'Release debe usar R8')
 require('shrinkResources true' in build, 'Release debe reducir recursos')
+require('compileSdk 36' in build, 'V5 debe compilar con API 36')
+require('targetSdk 36' in build, 'V5 debe orientarse a API 36')
+require('versionName "5.0-personal-jkm-lx3-rc1"' in build, 'Version V5 personal incorrecta')
 
 kotlin_root = ROOT / 'app/src/main/kotlin/com/example/honorofkingsassistant'
 required_sources = [
@@ -72,6 +75,12 @@ required_sources = [
     'HeroPortraitMatcher.kt',
     'AssistantStage.kt',
     'DraftSubphase.kt',
+    'PersonalDeviceProfile.kt',
+    'AdaptiveFrameCadence.kt',
+    'CaptureGeometry.kt',
+    'OcrBitmapPreprocessor.kt',
+    'VisionDiagnostics.kt',
+    'PortraitMatchSelector.kt',
 ]
 for source in required_sources:
     require((kotlin_root / source).is_file(), f'Falta {source}')
@@ -91,6 +100,8 @@ require('AssistantStage.IN_GAME' in all_kotlin, 'Falta modo Partida')
 require('DraftSubphaseDetector' in all_kotlin, 'Falta clasificación de veto/picks/ajustes/carga')
 require('slotIndexForPlayerName' in all_kotlin, 'Falta mapeo OCR acotado por fila')
 require('previewHighlightScore' in all_kotlin, 'Falta señal de preselección dorada')
+require('VisionDiagnosticsTracker' in all_kotlin, 'Falta diagnostico de vision V5')
+require('MIN_AMBIGUITY_MARGIN' in all_kotlin, 'Falta rechazo de retratos ambiguos V5')
 
 strings_text = (ROOT / 'app/src/main/res/values/strings.xml').read_text(encoding='utf-8')
 string_names = set(re.findall(r'<string\s+name="([^"]+)"', strings_text))
@@ -116,3 +127,4 @@ print('- Video completo calibrado: veto / picks / ajustes / carga / partida')
 print('- R-95 se detecta por fila; el slot no queda fijado entre partidas')
 print('- Control manual Pausado / Selección / Partida con sugerencias confirmables')
 print('- Recursos y contratos estáticos válidos')
+print('- Compatibilidad V5 personal: API 36, captura acotada y diagnostico')

@@ -1,9 +1,5 @@
 package com.example.honorofkingsassistant
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.graphics.Color
@@ -23,7 +19,6 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import androidx.core.app.NotificationCompat
 
 class OverlayService : Service() {
     private lateinit var windowManager: WindowManager
@@ -31,6 +26,7 @@ class OverlayService : Service() {
     private var panelView: ScrollView? = null
     private var bubbleView: TextView? = null
     private var statusView: TextView? = null
+    private var diagnosticsView: TextView? = null
     private var teamsView: TextView? = null
     private var recommendationsView: TextView? = null
     private var strategyView: TextView? = null
@@ -47,7 +43,6 @@ class OverlayService : Service() {
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        createNotificationChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -56,7 +51,6 @@ class OverlayService : Service() {
             return START_NOT_STICKY
         }
 
-        startForeground(NOTIFICATION_ID, buildNotification())
         if (!Settings.canDrawOverlays(this)) {
             stopSelf()
             return START_NOT_STICKY
@@ -67,7 +61,7 @@ class OverlayService : Service() {
                 mainHandler.post { render(state) }
             }
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     @Suppress("DEPRECATION")
@@ -150,11 +144,13 @@ class OverlayService : Service() {
         panelView = scrollPanel
 
         statusView = overlayText(13f, true)
+        diagnosticsView = overlayText(11f, false).apply { visibility = View.GONE }
         teamsView = overlayText(13f, false)
         recommendationsView = overlayText(13f, false)
         strategyView = overlayText(12f, false)
 
         panelContent.addView(statusView)
+        panelContent.addView(requireNotNull(diagnosticsView))
         panelContent.addView(sectionLabel(getString(R.string.manual_stage_title)))
         panelContent.addView(
             buttonRow(
@@ -357,6 +353,22 @@ class OverlayService : Service() {
             AssistantStage.IN_GAME -> "HOK · PARTIDA"
         }
         statusView?.text = state.status
+        val diagnostics = state.diagnostics
+        diagnosticsView?.apply {
+            val showDiagnostics = state.selectedStage == AssistantStage.DRAFT &&
+                diagnostics.processedFrames > 0
+            visibility = if (showDiagnostics) View.VISIBLE else View.GONE
+            if (showDiagnostics) {
+                text = getString(
+                    R.string.vision_diagnostics,
+                    diagnostics.averageLatencyMs,
+                    diagnostics.captureLabel,
+                    diagnostics.ocrLabel,
+                    diagnostics.processedFrames,
+                    diagnostics.droppedFrames
+                )
+            }
+        }
         rescanButton?.isEnabled = state.selectedStage == AssistantStage.DRAFT
 
         val suggested = state.suggestedStage
@@ -536,41 +548,6 @@ class OverlayService : Service() {
         stopSelf()
     }
 
-    private fun buildNotification(): Notification {
-        val openPendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val stopPendingIntent = PendingIntent.getService(
-            this,
-            1,
-            Intent(this, OverlayService::class.java).setAction(ACTION_STOP),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(getString(R.string.overlay_notification_title))
-            .setContentText(getString(R.string.overlay_notification_text_v4))
-            .setContentIntent(openPendingIntent)
-            .addAction(0, getString(R.string.stop_assistant), stopPendingIntent)
-            .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build()
-    }
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                getString(R.string.overlay_channel_name),
-                NotificationManager.IMPORTANCE_LOW
-            )
-            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
-        }
-    }
-
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     override fun onDestroy() {
@@ -579,6 +556,7 @@ class OverlayService : Service() {
         rootView?.let { runCatching { windowManager.removeView(it) } }
         rootView = null
         panelView = null
+        diagnosticsView = null
         super.onDestroy()
     }
 
@@ -587,7 +565,5 @@ class OverlayService : Service() {
     companion object {
         const val ACTION_SHOW = "com.example.honorofkingsassistant.SHOW_OVERLAY"
         const val ACTION_STOP = "com.example.honorofkingsassistant.STOP_OVERLAY"
-        private const val CHANNEL_ID = "draft_overlay"
-        private const val NOTIFICATION_ID = 1001
     }
 }

@@ -13,7 +13,8 @@ class DraftVisionEngine(
     context: Context,
     heroes: List<Hero>,
     enemyOnRight: Boolean = true,
-    private var playerName: String = "R-95"
+    private var playerName: String = "R-95",
+    private val callbackExecutor: java.util.concurrent.Executor
 ) : AutoCloseable {
     private val recognizer: TextRecognizer = TextRecognition.getClient(
         TextRecognizerOptions.DEFAULT_OPTIONS
@@ -22,6 +23,7 @@ class DraftVisionEngine(
     private val matcher = HeroNameMatcher(heroes)
     private val portraitMatcher = HeroPortraitMatcher(catalog, PortraitTemplateStore(context))
     private val processing = AtomicBoolean(false)
+    private val diagnosticsTracker = VisionDiagnosticsTracker()
     private val bitmapAnalyzer = DraftBitmapAnalyzer(enemyOnRight)
 
     @Volatile
@@ -43,47 +45,91 @@ class DraftVisionEngine(
     fun learnPortrait(heroName: String, slot: SlotPortraitFingerprint): Boolean =
         portraitMatcher.learn(heroName, slot)
 
+    fun diagnostics(): VisionDiagnostics = diagnosticsTracker.snapshot()
+
     fun process(
         bitmap: Bitmap,
         onResult: (DraftVisionResult) -> Unit,
         onError: (Throwable) -> Unit
     ): Boolean {
-        if (!processing.compareAndSet(false, true)) return false
+        if (!processing.compareAndSet(false, true)) {
+            diagnosticsTracker.onDroppedFrame()
+            return false
+        }
+
+        val startedAtNanos = System.nanoTime()
         val slotFingerprints = runCatching {
             portraitMatcher.fingerprints(bitmap, enemyOnRight)
         }.getOrElse { emptyList() }
         val portraitObservations = portraitMatcher.match(slotFingerprints)
-        val image = InputImage.fromBitmap(bitmap, 0)
-        recognizer.process(image)
-            .addOnSuccessListener { text ->
-                val observations = mergeObservations(
-                    extractOcrObservations(text, bitmap.width),
-                    portraitObservations
-                )
-                val board = bitmapAnalyzer.analyze(bitmap, text.text)
-                val subphase = DraftSubphaseDetector.detect(
-                    recognizedText = text.text,
-                    screenMode = board.mode,
-                    confirmedPickCount = board.totalConfirmedCount
-                )
-                onResult(
-                    DraftVisionResult(
-                        observations = observations,
-                        rawText = text.text,
-                        board = board,
-                        screenMode = board.mode,
-                        subphase = subphase,
-                        playerSlot = detectPlayerSlot(text, bitmap.width, bitmap.height),
-                        slotFingerprints = slotFingerprints
-                    )
-                )
-            }
-            .addOnFailureListener(onError)
-            .addOnCompleteListener {
+        val prepared = runCatching { OcrBitmapPreprocessor.prepare(bitmap) }
+            .getOrElse { error ->
                 processing.set(false)
                 if (!bitmap.isRecycled) bitmap.recycle()
+                onError(error)
+                return true
             }
-        return true
+        val ocrBitmap = prepared.bitmap
+        val image = InputImage.fromBitmap(ocrBitmap, 0)
+
+        return runCatching {
+            recognizer.process(image)
+                .addOnSuccessListener(callbackExecutor) { text ->
+                    val latencyMs = (System.nanoTime() - startedAtNanos) / 1_000_000L
+                    val diagnostics = diagnosticsTracker.onProcessedFrame(
+                        latencyMs = latencyMs,
+                        captureWidth = bitmap.width,
+                        captureHeight = bitmap.height,
+                        ocrWidth = ocrBitmap.width,
+                        ocrHeight = ocrBitmap.height
+                    )
+                    val observations = mergeObservations(
+                        extractOcrObservations(text, ocrBitmap.width),
+                        portraitObservations
+                    )
+                    val board = bitmapAnalyzer.analyze(bitmap, text.text)
+                    val subphase = DraftSubphaseDetector.detect(
+                        recognizedText = text.text,
+                        screenMode = board.mode,
+                        confirmedPickCount = board.totalConfirmedCount
+                    )
+                    onResult(
+                        DraftVisionResult(
+                            observations = observations,
+                            rawText = text.text,
+                            board = board,
+                            screenMode = board.mode,
+                            subphase = subphase,
+                            playerSlot = detectPlayerSlot(text, ocrBitmap.width, ocrBitmap.height),
+                            slotFingerprints = slotFingerprints,
+                            diagnostics = diagnostics
+                        )
+                    )
+                }
+                .addOnFailureListener(callbackExecutor) { error ->
+                    val latencyMs = (System.nanoTime() - startedAtNanos) / 1_000_000L
+                    diagnosticsTracker.onProcessedFrame(
+                        latencyMs = latencyMs,
+                        captureWidth = bitmap.width,
+                        captureHeight = bitmap.height,
+                        ocrWidth = ocrBitmap.width,
+                        ocrHeight = ocrBitmap.height
+                    )
+                    onError(error)
+                }
+                .addOnCompleteListener(callbackExecutor) {
+                    prepared.release()
+                    processing.set(false)
+                    if (!bitmap.isRecycled) bitmap.recycle()
+                }
+            true
+        }.getOrElse { error ->
+            prepared.release()
+            processing.set(false)
+            if (!bitmap.isRecycled) bitmap.recycle()
+            onError(error)
+            true
+        }
     }
 
     private fun mergeObservations(

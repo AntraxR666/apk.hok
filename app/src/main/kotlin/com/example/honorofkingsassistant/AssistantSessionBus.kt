@@ -20,6 +20,7 @@ data class AssistantUiState(
     val playerPickLocked: Boolean = false,
     val draftFlow: DraftFlowState = DraftFlowResolver.resolve(DraftBoardState.empty(), null),
     val learnedPortraitCount: Int = 0,
+    val diagnostics: VisionDiagnostics = VisionDiagnostics(),
     val lastUpdatedAtMs: Long = System.currentTimeMillis()
 )
 

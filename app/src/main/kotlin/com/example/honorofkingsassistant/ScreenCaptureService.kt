@@ -20,8 +20,8 @@ import android.os.HandlerThread
 import android.os.IBinder
 import android.os.SystemClock
 import android.util.Log
+import android.view.WindowManager
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
 
 class ScreenCaptureService : Service() {
     private lateinit var counterEngine: CounterEngine
@@ -37,6 +37,8 @@ class ScreenCaptureService : Service() {
     private var imageReader: ImageReader? = null
     private var workerThread: HandlerThread? = null
     private var workerHandler: Handler? = null
+    private var captureSize: CaptureSize? = null
+    private var captureDensityDpi: Int = 0
     private var enemyOnRight = true
     private var selectedStage = AssistantStage.PAUSED
     private var suggestedStage: AssistantStage? = null
@@ -51,6 +53,7 @@ class ScreenCaptureService : Service() {
     private var playerPickOverride: PlayerPickOverride = PlayerPickOverride.AUTO
     private var lastSlotFingerprints: List<SlotPortraitFingerprint> = emptyList()
     private var learnedPortraitCount = 0
+    private var lastVisionDiagnostics = VisionDiagnostics()
     private val manualAllies = linkedSetOf<String>()
     private val manualEnemies = linkedSetOf<String>()
 
@@ -59,18 +62,29 @@ class ScreenCaptureService : Service() {
         counterEngine = CounterEngine(this)
         recommendationEngine = DraftRecommendationEngine(counterEngine.catalog)
         strategyEngine = StrategyEngine()
-        tracker = TemporalDraftTracker(requiredHits = 2, historySize = 4)
+        tracker = TemporalDraftTracker(
+            requiredHits = 3,
+            historySize = 5,
+            minimumObservationConfidence = 0.55
+        )
         boardStabilizer = DraftBoardTemporalStabilizer(requiredConfirmationFrames = 3)
         playerSlotResolver = PlayerSlotResolver(requiredHits = 4, maxMisses = 4)
         manualPlayerSlotIndex = AssistantPreferences.getManualPlayerSlot(this)
         playerPickOverride = AssistantPreferences.getPlayerPickOverride(this)
         lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
         selectedStage = AssistantPreferences.getAssistantStage(this)
+        workerThread = HandlerThread("HoKDraftCapture").also { it.start() }
+        workerHandler = Handler(requireNotNull(workerThread).looper)
+        val callbackExecutor = java.util.concurrent.Executor { command ->
+            val handler = workerHandler
+            if (handler == null || !handler.post(command)) command.run()
+        }
         visionEngine = DraftVisionEngine(
-            this,
-            counterEngine.allHeroes(),
-            enemyOnRight,
-            AssistantPreferences.getPlayerName(this)
+            context = this,
+            heroes = counterEngine.allHeroes(),
+            enemyOnRight = enemyOnRight,
+            playerName = AssistantPreferences.getPlayerName(this),
+            callbackExecutor = callbackExecutor
         )
         createNotificationChannel()
     }
@@ -84,9 +98,9 @@ class ScreenCaptureService : Service() {
             ACTION_SET_STAGE -> {
                 val requested = intent.getStringExtra(EXTRA_ASSISTANT_STAGE)
                     ?.let { runCatching { AssistantStage.valueOf(it) }.getOrNull() }
-                    ?: return START_STICKY
+                    ?: return START_NOT_STICKY
                 setStage(requested)
-                return START_STICKY
+                return START_NOT_STICKY
             }
             ACTION_SWAP_SIDES -> {
                 enemyOnRight = !enemyOnRight
@@ -101,7 +115,7 @@ class ScreenCaptureService : Service() {
                 lastSubphase = DraftSubphase.UNKNOWN
                 suggestedStage = null
                 publishCurrent("Lados intercambiados; esperando confirmaciones nuevas")
-                return START_STICKY
+                return START_NOT_STICKY
             }
             ACTION_FORCE_SCAN -> {
                 if (selectedStage == AssistantStage.DRAFT) {
@@ -110,7 +124,7 @@ class ScreenCaptureService : Service() {
                 } else {
                     publishCurrent("Activa el modo Selección para escanear el draft")
                 }
-                return START_STICKY
+                return START_NOT_STICKY
             }
             ACTION_SET_PLAYER_SLOT -> {
                 val requested = intent.getIntExtra(EXTRA_PLAYER_SLOT_INDEX, 0)
@@ -120,9 +134,9 @@ class ScreenCaptureService : Service() {
                 lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
                 publishCurrent(
                     manualPlayerSlotIndex?.let { "Tu slot quedó fijado manualmente en $it" }
-                        ?: "Detección automática de tu slot activada; requiere tres lecturas coincidentes"
+                        ?: "Detección automática de tu slot activada; requiere cuatro lecturas coincidentes"
                 )
-                return START_STICKY
+                return START_NOT_STICKY
             }
             ACTION_SET_PLAYER_PICK_OVERRIDE -> {
                 playerPickOverride = intent.getStringExtra(EXTRA_PLAYER_PICK_OVERRIDE)
@@ -136,7 +150,7 @@ class ScreenCaptureService : Service() {
                         PlayerPickOverride.LOCKED -> "Tu pick quedó marcado manualmente como fijado"
                     }
                 )
-                return START_STICKY
+                return START_NOT_STICKY
             }
             ACTION_MANUAL_ADD -> {
                 val heroName = intent.getStringExtra(EXTRA_HERO_NAME).orEmpty()
@@ -151,17 +165,17 @@ class ScreenCaptureService : Service() {
                         else "Héroe añadido manualmente"
                     )
                 }
-                return START_STICKY
+                return START_NOT_STICKY
             }
             ACTION_MANUAL_CLEAR -> {
                 manualAllies.clear()
                 manualEnemies.clear()
                 publishCurrent("Correcciones manuales eliminadas")
-                return START_STICKY
+                return START_NOT_STICKY
             }
         }
 
-        if (mediaProjection != null) return START_STICKY
+        if (mediaProjection != null) return START_NOT_STICKY
 
         startForeground(NOTIFICATION_ID, buildNotification("Asistente activo · modo pausado"))
         val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, Int.MIN_VALUE) ?: Int.MIN_VALUE
@@ -184,13 +198,13 @@ class ScreenCaptureService : Service() {
             AssistantSessionBus.publish(
                 AssistantUiState(
                     active = true,
-                    status = "Asistente listo. Elige Selección o Partida desde la burbuja.",
+                    status = "Asistente listo para ${PersonalDeviceProfile.MODEL}. Elige Selección o Partida.",
                     selectedStage = selectedStage,
                     suggestedStage = null,
                     enemyOnRight = enemyOnRight
                 )
             )
-            START_STICKY
+            START_NOT_STICKY
         } catch (error: Exception) {
             Log.e(TAG, "No se pudo iniciar MediaProjection", error)
             stopSelf()
@@ -232,34 +246,76 @@ class ScreenCaptureService : Service() {
     @android.annotation.SuppressLint("WrongConstant")
     private fun startProjection(resultCode: Int, resultData: Intent) {
         val manager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        val callbackHandler = Handler(mainLooper)
         mediaProjection = manager.getMediaProjection(resultCode, resultData).also { projection ->
             projection.registerCallback(object : MediaProjection.Callback() {
                 override fun onStop() {
                     stopSelf()
                 }
-            }, Handler(mainLooper))
+
+                override fun onCapturedContentResize(width: Int, height: Int) {
+                    callbackHandler.post { resizeCaptureSurface(width, height) }
+                }
+            }, callbackHandler)
         }
 
-        val metrics = resources.displayMetrics
-        val width = metrics.widthPixels.coerceAtLeast(1)
-        val height = metrics.heightPixels.coerceAtLeast(1)
-        val density = metrics.densityDpi
+        captureDensityDpi = resources.displayMetrics.densityDpi
 
-        workerThread = HandlerThread("HoKDraftCapture").also { it.start() }
-        workerHandler = Handler(requireNotNull(workerThread).looper)
-        imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2).apply {
-            setOnImageAvailableListener({ reader -> handleImage(reader.acquireLatestImage()) }, workerHandler)
-        }
-        virtualDisplay = mediaProjection?.createVirtualDisplay(
+        val (sourceWidth, sourceHeight) = initialCaptureSourceSize()
+        val initialSize = CaptureGeometry.fit(sourceWidth, sourceHeight)
+        val reader = createImageReader(initialSize)
+        imageReader = reader
+        captureSize = initialSize
+        virtualDisplay = requireNotNull(mediaProjection).createVirtualDisplay(
             "HoKDraftAssistant",
-            width,
-            height,
-            density,
+            initialSize.width,
+            initialSize.height,
+            captureDensityDpi,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-            imageReader?.surface,
+            reader.surface,
             null,
             workerHandler
         )
+    }
+
+    private fun initialCaptureSourceSize(): Pair<Int, Int> {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val bounds = getSystemService(WindowManager::class.java).maximumWindowMetrics.bounds
+            return bounds.width().coerceAtLeast(1) to bounds.height().coerceAtLeast(1)
+        }
+        val metrics = resources.displayMetrics
+        return metrics.widthPixels.coerceAtLeast(1) to metrics.heightPixels.coerceAtLeast(1)
+    }
+
+    @android.annotation.SuppressLint("WrongConstant")
+    private fun createImageReader(size: CaptureSize): ImageReader =
+        ImageReader.newInstance(size.width, size.height, PixelFormat.RGBA_8888, 2).apply {
+            setOnImageAvailableListener(
+                { reader -> handleImage(reader.acquireLatestImage()) },
+                workerHandler
+            )
+        }
+
+    private fun resizeCaptureSurface(sourceWidth: Int, sourceHeight: Int) {
+        if (sourceWidth <= 0 || sourceHeight <= 0) return
+        val display = virtualDisplay ?: return
+        val nextSize = CaptureGeometry.fit(sourceWidth, sourceHeight)
+        if (nextSize == captureSize) return
+
+        val nextReader = createImageReader(nextSize)
+        val nextSurface = if (selectedStage == AssistantStage.DRAFT) nextReader.surface else null
+        runCatching {
+            display.resize(nextSize.width, nextSize.height, captureDensityDpi)
+            display.setSurface(nextSurface)
+        }.onSuccess {
+            val previousReader = imageReader
+            imageReader = nextReader
+            captureSize = nextSize
+            previousReader?.close()
+        }.onFailure { error ->
+            nextReader.close()
+            Log.w(TAG, "No se pudo redimensionar la captura a $nextSize", error)
+        }
     }
 
     private fun handleImage(image: Image?) {
@@ -271,7 +327,11 @@ class ScreenCaptureService : Service() {
         }
 
         val now = SystemClock.elapsedRealtime()
-        if (!forceNextFrame && now - lastFrameAt < policy.frameIntervalMs) {
+        val effectiveIntervalMs = AdaptiveFrameCadence.interval(
+            baseIntervalMs = policy.frameIntervalMs,
+            averageLatencyMs = visionEngine.diagnostics().averageLatencyMs
+        )
+        if (!forceNextFrame && now - lastFrameAt < effectiveIntervalMs) {
             image.close()
             return
         }
@@ -290,6 +350,7 @@ class ScreenCaptureService : Service() {
         val accepted = visionEngine.process(
             bitmap = bitmap,
             onResult = { result ->
+                lastVisionDiagnostics = result.diagnostics
                 lastScreenMode = result.screenMode
                 lastSubphase = result.subphase
                 suggestedStage = AssistantStagePolicy.suggest(
@@ -323,11 +384,15 @@ class ScreenCaptureService : Service() {
                 publishCurrent(status)
             },
             onError = { error ->
+                lastVisionDiagnostics = visionEngine.diagnostics()
                 Log.w(TAG, "OCR falló en un frame", error)
                 publishCurrent("OCR temporalmente sin resultado")
             }
         )
-        if (!accepted && !bitmap.isRecycled) bitmap.recycle()
+        if (!accepted) {
+            lastVisionDiagnostics = visionEngine.diagnostics()
+            if (!bitmap.isRecycled) bitmap.recycle()
+        }
     }
 
     private fun ScreenMode.toDetectedScene(): DetectedScene = when (this) {
@@ -451,7 +516,8 @@ class ScreenCaptureService : Service() {
                 playerPickOverride = playerPickOverride,
                 playerPickLocked = playerPickLocked,
                 draftFlow = flow,
-                learnedPortraitCount = learnedPortraitCount
+                learnedPortraitCount = learnedPortraitCount,
+                diagnostics = lastVisionDiagnostics
             )
         )
         startOverlayService()
@@ -472,8 +538,7 @@ class ScreenCaptureService : Service() {
     }
 
     private fun startOverlayService() {
-        ContextCompat.startForegroundService(
-            this,
+        startService(
             Intent(this, OverlayService::class.java).setAction(OverlayService.ACTION_SHOW)
         )
     }
@@ -546,6 +611,8 @@ class ScreenCaptureService : Service() {
         virtualDisplay = null
         imageReader?.close()
         imageReader = null
+        captureSize = null
+        captureDensityDpi = 0
         mediaProjection?.stop()
         mediaProjection = null
         workerThread?.quitSafely()

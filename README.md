@@ -1,57 +1,36 @@
-# HoK Draft Assistant V4.3 RC1 — calibrada con video completo
+# HoK Draft Assistant V5 Personal — Huawei JKM-LX3
 
-Esta candidata integra la grabación horizontal completa suministrada por el usuario (848x392, 237.5 s) y corrige los dos fallos más graves observados en V4.1/V4.2:
+Esta candidata está calibrada para el **Huawei JKM-LX3**, Android 9, EMUI 9.1, Kirin 710, 4 GB de RAM y pantalla 2340×1080. Todo el procesamiento permanece en el teléfono y la aplicación no solicita acceso a Internet.
 
-1. el slot del jugador ya no queda fijado entre partidas;
-2. un avatar de perfil ya no se interpreta como héroe confirmado.
+## Perfil de rendimiento
 
-## Uso desde la burbuja
+- La captura se reduce exactamente al 50 % de la resolución horizontal del dispositivo: **2340×1080 → 1170×540**.
+- El OCR utiliza la misma superficie de 1170 px para evitar crear otro bitmap cuando no hace falta.
+- `ImageReader` conserva dos buffers porque `acquireLatestImage()` necesita al menos dos para descartar fotogramas antiguos correctamente.
+- La cadencia comienza en 700 ms y aumenta automáticamente hasta 1600 ms cuando la latencia del Kirin 710 sube.
+- Los fotogramas que llegan mientras ML Kit está ocupado se descartan; nunca se acumula una cola retrasada.
+- La identidad exige 3 coincidencias en 5 fotogramas con confianza mínima de 0,55 y rechazo de retratos ambiguos.
 
-- **Pausa:** mantiene la sesión sin procesar fotogramas.
-- **Selección:** activa veto/picks/ajustes, OCR, slots y recomendaciones.
-- **Partida:** conserva la composición final y muestra la estrategia sin seguir escaneando el draft.
+## Funcionamiento
 
-El panel es desplazable. Puedes fijar manualmente:
+- **Pausa:** mantiene la autorización sin analizar imágenes.
+- **Selección:** analiza veto, picks y ajustes, y actualiza recomendaciones.
+- **Partida:** conserva composición y estrategia sin continuar el OCR.
+- La etapa manual siempre manda; la detección automática solo sugiere.
+- La burbuja permite corregir slot, estado del pick y composición.
 
-- tu slot: Auto / 1 / 2 / 3 / 4 / 5;
-- tu pick: Auto / Pendiente / Fijado.
+## Antes de instalar
 
-El modo automático solo sugiere cambios de etapa; nunca los fuerza.
+La captura suministrada muestra aproximadamente **610 MB libres**. Libera al menos **2 GB** antes de instalar y probar; EMUI y Android necesitan margen temporal para actualizar aplicaciones y mantener estable el sistema.
 
-## Mejoras derivadas del video
+En EMUI 9.1 configura la aplicación en **Inicio de aplicaciones / App launch** como administración manual y permite inicio automático, inicio secundario y ejecución en segundo plano. También exclúyela de la optimización de batería durante las pruebas.
 
-- subfases detectables: veto, selección, últimos ajustes, carga y partida;
-- `R-95` aparece en slot 4 en el video, aunque estaba en slot 2 en capturas anteriores: el slot se detecta por fila y exige 4 lecturas consistentes;
-- regiones del diamante de bloqueo recalibradas contra el fotograma real de 120 s;
-- el estado observado a 120 s se usa como prueba de regresión: 4 aliados fijados, R-95 preseleccionando, 4 enemigos fijados y último enemigo vacío;
-- tres fotogramas estables para confirmar el tablero y reducir parpadeos.
+## Compilación y entrega
 
-## Aplicar, probar y compilar
+Ejecuta una sola vez `PREPARAR_V5_HUAWEI_JKM_LX3_Y_SUBIR.bat`. El lanzador valida el paquete, crea respaldo, aplica los cambios, sube el commit, espera GitHub Actions y solo descarga la APK después de `testDebugUnitTest`, `lintDebug` y `assembleDebug` exitosos.
 
-1. Extrae el ZIP en una carpeta nueva.
-2. Ejecuta `APLICAR_V4_Y_COMPILAR.bat`.
-3. El instalador crea respaldo, valida el catálogo y la configuración, ejecuta las pruebas JUnit, compila y abre internamente la APK para verificar sus archivos esenciales.
-4. Solo devuelve éxito cuando encuentra una APK real con `AndroidManifest.xml`, `classes.dex` y `assets/hok_counters.json`.
+Una compilación correcta no demuestra por sí sola precisión perfecta. La puerta final está en `docs/V5_PERSONAL_REAL_DEVICE_ACCEPTANCE.md`.
 
-Salida esperada en el Escritorio:
+## Delivery V3
 
-`HoK_Draft_Assistant_V4_3_RC1_VIDEO_CALIBRATED.apk`
-
-Proyecto de destino predeterminado:
-
-`C:\Users\Windows 11 Pro\Documents\HoK_Counter_App`
-
-## GitHub privado y compilación automática
-
-La carpeta incluye `CREAR_REPO_PRIVADO_Y_SUBIR.bat`. Al ejecutarlo en Windows:
-
-1. Comprueba Git y GitHub CLI.
-2. Instala las herramientas con `winget` si faltan.
-3. Abre el inicio de sesión oficial de GitHub.
-4. Crea `AntraxR666/HoK-Draft-Assistant` como repositorio privado.
-5. Sube el proyecto completo.
-6. Activa `.github/workflows/android-ci.yml` automáticamente.
-
-El flujo CI ejecuta validadores, pruebas unitarias, lint, compilación Debug y verificación interna de la APK.
-
-Para compilar directamente en el PC sin copiar sobre otro proyecto, ejecuta `COMPILAR_Y_VERIFICAR_LOCAL.bat`.
+The Windows launcher creates a fresh temporary clone of `AntraxR666/apk.hok`. It does not reuse or depend on any previous local Git folder or `origin` configuration.

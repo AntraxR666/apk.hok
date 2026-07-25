@@ -31,7 +31,7 @@ object AssistantStagePolicy {
             shouldProcessFrames = true,
             shouldRunDraftVision = true,
             shouldShowStrategy = false,
-            frameIntervalMs = 1_200L
+            frameIntervalMs = PersonalDeviceProfile.DRAFT_BASE_INTERVAL_MS
         )
         AssistantStage.IN_GAME -> AssistantStagePolicyResult(
             shouldProcessFrames = false,
