@@ -247,17 +247,21 @@ class ScreenCaptureService : Service() {
     private fun startProjection(resultCode: Int, resultData: Intent) {
         val manager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         val callbackHandler = Handler(mainLooper)
-        mediaProjection = manager.getMediaProjection(resultCode, resultData).also { projection ->
-            projection.registerCallback(object : MediaProjection.Callback() {
-                override fun onStop() {
-                    stopSelf()
-                }
-
-                override fun onCapturedContentResize(width: Int, height: Int) {
-                    callbackHandler.post { resizeCaptureSurface(width, height) }
-                }
-            }, callbackHandler)
+        val projection = requireNotNull(
+            manager.getMediaProjection(resultCode, resultData)
+        ) {
+            "MediaProjectionManager returned null after valid capture consent"
         }
+        projection.registerCallback(object : MediaProjection.Callback() {
+            override fun onStop() {
+                stopSelf()
+            }
+
+            override fun onCapturedContentResize(width: Int, height: Int) {
+                callbackHandler.post { resizeCaptureSurface(width, height) }
+            }
+        }, callbackHandler)
+        mediaProjection = projection
 
         captureDensityDpi = resources.displayMetrics.densityDpi
 
@@ -266,7 +270,7 @@ class ScreenCaptureService : Service() {
         val reader = createImageReader(initialSize)
         imageReader = reader
         captureSize = initialSize
-        virtualDisplay = requireNotNull(mediaProjection).createVirtualDisplay(
+        virtualDisplay = projection.createVirtualDisplay(
             "HoKDraftAssistant",
             initialSize.width,
             initialSize.height,

@@ -59,6 +59,7 @@ jobs:
           python3 tools/test_v5_single_fgs_contract.py
           python3 tools/test_v5_delivery_contract.py
           python3 tools/test_v5_huawei_profile_contract.py
+          python3 tools/test_media_projection_nullability_contract.py
           python3 tools/validate_v5.py
 
       - name: Unit tests, lint and APK
