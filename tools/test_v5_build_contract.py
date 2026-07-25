@@ -18,7 +18,7 @@ expected = {
     "CI API 36": 'platforms;android-36' in workflow,
     "CI Build Tools 35": 'build-tools;35.0.0' in workflow,
     "V5 artifact": 'HoK-Draft-Assistant-V5-Huawei-JKM-LX3' in workflow,
-    "No INTERNET permission": "android.permission.INTERNET" not in manifest,
+    "INTERNET removed from merged manifest": 'android.permission.INTERNET" tools:node="remove"' in manifest,
 }
 
 missing = [name for name, ok in expected.items() if not ok]

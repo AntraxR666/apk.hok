@@ -48,7 +48,7 @@ except Exception as exc:
     errors.append(f'data_manifest inválido: {exc}')
 
 manifest = (ROOT / 'app/src/main/AndroidManifest.xml').read_text(encoding='utf-8')
-require('android.permission.INTERNET' not in manifest, 'La app no debe declarar INTERNET')
+require('android.permission.INTERNET\" tools:node=\"remove\"' in manifest, 'La app debe eliminar INTERNET del manifiesto fusionado')
 require('FOREGROUND_SERVICE_MEDIA_PROJECTION' in manifest, 'Falta permiso de MediaProjection FGS')
 require('android:foregroundServiceType="mediaProjection"' in manifest, 'Falta tipo mediaProjection')
 require('android:allowBackup="false"' in manifest, 'allowBackup debe ser false')

@@ -6,7 +6,7 @@ capture = Path('app/src/main/kotlin/com/example/honorofkingsassistant/ScreenCapt
 
 assert 'SYSTEM_ALERT_WINDOW' in manifest
 assert 'FOREGROUND_SERVICE_MEDIA_PROJECTION' in manifest
-assert 'android.permission.INTERNET' not in manifest
+assert 'android.permission.INTERNET" tools:node="remove"' in manifest
 assert 'TYPE_APPLICATION_OVERLAY' in overlay
 assert 'startForeground(' not in overlay and 'startForeground(' in capture
 assert 'FINAL_ENEMY_PICK' in overlay

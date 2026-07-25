@@ -60,6 +60,7 @@ jobs:
           python3 tools/test_v5_delivery_contract.py
           python3 tools/test_v5_huawei_profile_contract.py
           python3 tools/test_media_projection_nullability_contract.py
+          python3 tools/test_v5_offline_manifest_contract.py
           python3 tools/validate_v5.py
 
       - name: Unit tests, lint and APK
@@ -76,6 +77,14 @@ jobs:
           AAPT="$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt"
           test -x "$AAPT"
           "$AAPT" dump badging "$APK" | tee app-debug.badging.txt
+          if grep -Fq "uses-permission: name='android.permission.INTERNET'" app-debug.badging.txt; then
+            echo "Unexpected INTERNET permission in final APK" >&2
+            exit 1
+          fi
+          if grep -Fq "uses-permission: name='android.permission.ACCESS_NETWORK_STATE'" app-debug.badging.txt; then
+            echo "Unexpected ACCESS_NETWORK_STATE permission in final APK" >&2
+            exit 1
+          fi
           grep -q "versionCode='11'" app-debug.badging.txt
           grep -q "versionName='5.0-personal-jkm-lx3-rc1'" app-debug.badging.txt
           sha256sum "$APK" | tee app-debug.apk.sha256

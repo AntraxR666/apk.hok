@@ -70,7 +70,7 @@ for expected in (
     require(expected in root_gradle, f"Toolchain V5 ausente: {expected}")
 require("gradle-8.11.1-bin.zip" in wrapper, "Gradle wrapper debe ser 8.11.1")
 
-require("android.permission.INTERNET" not in manifest, "V5 personal no debe declarar INTERNET")
+require('android.permission.INTERNET" tools:node="remove"' in manifest, "V5 personal debe eliminar INTERNET del manifiesto fusionado")
 require("FOREGROUND_SERVICE_MEDIA_PROJECTION" in manifest, "Falta permiso FGS mediaProjection")
 require('android:foregroundServiceType="mediaProjection"' in manifest, "Falta tipo mediaProjection")
 require('android:allowBackup="false"' in manifest, "allowBackup debe permanecer false")

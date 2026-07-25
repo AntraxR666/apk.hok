@@ -87,8 +87,8 @@ def validate_xml_and_resources() -> None:
     ):
         if permission not in manifest:
             fail(f"Falta permiso: {permission}")
-    if "android.permission.INTERNET" in manifest:
-        fail("La V4 local no debe declarar INTERNET")
+    if "android.permission.INTERNET" in manifest and 'android.permission.INTERNET" tools:node="remove"' not in manifest:
+        fail("La V4 local no debe declarar INTERNET sin tools:node=remove")
     if 'android:foregroundServiceType="mediaProjection"' not in manifest:
         fail("ScreenCaptureService no declara mediaProjection")
 
