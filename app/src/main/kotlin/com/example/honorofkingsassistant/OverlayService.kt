@@ -762,7 +762,7 @@ class OverlayService : Service() {
             }
         }
 
-        strategyView?.text = when (state.selectedStage) {
+        val strategyText = when (state.selectedStage) {
             AssistantStage.PAUSED -> "Plan conservado; no se realizan análisis nuevos."
             else -> state.strategy?.asLines()?.joinToString("\n")
                 ?: if (state.board.totalConfirmedCount > 0) {
@@ -770,6 +770,14 @@ class OverlayService : Service() {
                 } else {
                     "Plan: esperando composición"
                 }
+        }
+        strategyView?.text = buildString {
+            append(strategyText)
+            state.itemPlan?.let { plan ->
+                append("\n\nCompra siguiente\n")
+                append(plan.nextItems.joinToString(" · ") { it.name })
+                plan.evidence.firstOrNull()?.let { append("\n").append(it) }
+            }
         }
     }
 

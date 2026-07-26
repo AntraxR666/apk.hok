@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "patch_label": "Global snapshot 2026-07-26",
+  "snapshot_date": "2026-07-26",
+  "source_url": "https://hokmeta.com/api/items.json",
+  "items": [
+    {"id":"1313","name":"Anti-magic Cloak","cost":275,"tier":1,"tags":["magic_defense"]},
+    {"id":"1335","name":"Succubus Cloak","cost":2020,"tier":3,"tags":["magic_defense","health"]},
+    {"id":"1325","name":"Protector's Cuirass","cost":800,"tier":2,"tags":["physical_defense","health"]},
+    {"id":"1334","name":"Eye of the Phoenix","cost":2020,"tier":3,"tags":["magic_defense","physical_defense","health","sustain"]},
+    {"id":"12211","name":"Venomous Staff","cost":2040,"tier":2,"tags":["magic_attack","anti_heal"]},
+    {"id":"11210","name":"Mortal Punisher","cost":2080,"tier":2,"tags":["physical_attack","anti_heal"]},
+    {"id":"1238","name":"Sage's Tome","cost":2610,"tier":3,"tags":["magic_attack","mage_core"]},
+    {"id":"1240","name":"Insatiable Tome","cost":2060,"tier":3,"tags":["magic_attack","lifesteal","mage_core"]},
+    {"id":"1133","name":"Eternity Blade","cost":2110,"tier":3,"tags":["physical_attack","critical","physical_core"]},
+    {"id":"1155","name":"Daybreaker's Virtue","cost":2570,"tier":3,"tags":["physical_attack","attack_speed","marksman_core"]},
+    {"id":"1131","name":"Starbreaker","cost":2080,"tier":2,"tags":["physical_attack","anti_tank"]},
+    {"id":"1531","name":"Runeblade","cost":2160,"tier":3,"tags":["magic_attack","jungler_core"]}
+  ]
+}

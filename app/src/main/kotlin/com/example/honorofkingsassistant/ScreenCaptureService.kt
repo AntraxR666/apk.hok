@@ -34,6 +34,7 @@ class ScreenCaptureService : Service() {
     private lateinit var visionEngine: DraftVisionEngine
     private lateinit var scoreboardAnalyzer: ScoreboardBitmapAnalyzer
     private lateinit var scoreboardReconciler: ScoreboardReconciler
+    private lateinit var itemRecommendationEngine: ItemRecommendationEngine
     private lateinit var boardStabilizer: DraftBoardTemporalStabilizer
     private lateinit var playerSlotResolver: PlayerSlotResolver
     private val sessionCoordinator = DraftSessionCoordinator()
@@ -108,6 +109,7 @@ class ScreenCaptureService : Service() {
         )
         scoreboardAnalyzer = ScoreboardBitmapAnalyzer(counterEngine.catalog)
         scoreboardReconciler = ScoreboardReconciler(counterEngine.catalog)
+        itemRecommendationEngine = ItemRecommendationEngine(ItemCatalog.load(this))
         matchMode = visionEngine.matchModeState()
         lastRecognition = visionEngine.recognitionCalibration()
         createNotificationChannel()
@@ -799,6 +801,33 @@ class ScreenCaptureService : Service() {
         val recommendations = if (
             selectedStage == AssistantStage.DRAFT && flow.shouldRecommendPicks
         ) allCandidates else emptyList()
+        val playerSlot = manualPlayerSlotIndex ?: lastPlayerSlot?.takeIf { it.side == TeamSide.ALLY }?.slotIndex
+        val playerHero = playerSlot?.let { slot ->
+            manualAssignments.heroAt(TeamSide.ALLY, slot)
+                ?: merged.allies.getOrNull(slot - 1)?.heroName
+        }?.let(counterEngine::findHero)
+        val enemyThreats = merged.enemies.mapNotNull { enemy ->
+            counterEngine.findHero(enemy.heroName)?.role?.let { role ->
+                when {
+                    role.contains("Mid", ignoreCase = true) -> EnemyThreat.MAGIC_BURST
+                    role.contains("Farm", ignoreCase = true) -> EnemyThreat.PHYSICAL_BURST
+                    role.contains("Clash", ignoreCase = true) -> EnemyThreat.TANK
+                    role.contains("Roamer", ignoreCase = true) -> EnemyThreat.CROWD_CONTROL
+                    else -> null
+                }
+            }
+        }
+        val itemPlan = playerHero?.let {
+            itemRecommendationEngine.recommend(
+                ItemRecommendationContext(
+                    playerHero = it,
+                    matchMode = matchMode.effective,
+                    allies = merged.allies,
+                    enemies = merged.enemies,
+                    enemyThreats = enemyThreats
+                )
+            )
+        }
 
         val strategyCandidate = recommendations.firstOrNull()
             ?: allCandidates.firstOrNull()
@@ -832,6 +861,7 @@ class ScreenCaptureService : Service() {
             matchMode = matchMode,
             snapshot = merged,
             recommendations = recommendations,
+            itemPlan = itemPlan,
             strategy = strategy,
             enemyOnRight = enemyOnRight,
             board = lastBoard,

@@ -11,6 +11,7 @@ data class AssistantUiState(
     val matchMode: MatchModeState = MatchModeState(),
     val snapshot: DraftSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList()),
     val recommendations: List<DraftPickRecommendation> = emptyList(),
+    val itemPlan: ItemPlan? = null,
     val strategy: StrategyPlan? = null,
     val enemyOnRight: Boolean = true,
     val board: DraftBoardState = DraftBoardState.empty(),
