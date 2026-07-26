@@ -18,6 +18,9 @@
 - Normal selection never invents enemy picks; enemies become available only from loading evidence or an explicit scoreboard scan.
 - Scoreboard scanning is user-triggered through `Verificar equipos e ítems`; automatic detection may only show a suggestion.
 - A manual correction has confidence `1.0` and cannot be overwritten automatically.
+- Visual templates are surface-scoped. Draft-side portraits, loading splash
+  cards, and scoreboard portraits must never share one undifferentiated
+  fingerprint pool.
 - Item recommendations must cite deterministic local evidence and remain useful when no enemy data is available.
 - Every production behavior starts with a failing unit or contract test.
 
@@ -425,6 +428,10 @@ skin/icon variants.
 Analyze the top five ally and bottom five enemy cards. Combine exact localized
 title, portrait and player-name evidence; bind R-95 to ally card four. Return
 unresolved conflicts for review rather than overwriting manual evidence.
+Use calibrated portrait-only ROIs inside each loading card. Loading-card
+fingerprints may match only templates learned from the same loading-card
+surface; never compare a draft-side/default portrait template with skin splash
+art. Preserve prior/manual identities when a skin is unknown.
 
 - [ ] **Step 6: Run focused and full verification**
 
@@ -454,8 +461,8 @@ git commit -m "feat(ranked): calibrate portraits and recognition bootstrap"
 **Interfaces:**
 - Consumes: `InputMode`, `MatchMode`, and `AssistantUiState`.
 - Produces: controls for input mode, match mode, stage, slot, pick state,
-  `Escanear ahora`, `Verificar equipos e ítems`, and an in-overlay manual team
-  editor.
+  `Escanear ahora`, `Confirmar equipos antes de partida`,
+  `Verificar equipos e ítems`, and an in-overlay manual team editor.
 
 - [ ] **Step 1: Extend failing overlay contracts**
 
@@ -465,6 +472,7 @@ Assert source contains:
 COLLAPSED_ALPHA = 0.55f
 EXPANDED_ALPHA = 0.82f
 MAX_PANEL_HEIGHT_RATIO = 0.72f
+Confirmar equipos antes de partida
 Verificar equipos e ítems
 AUTO_SCAN
 MANUAL
@@ -507,6 +515,12 @@ Publish immutable preference changes through service intents; do not mutate `Ass
 The scoreboard action must use its own explicit in-game command; do not reuse
 the draft-only force-scan action. Keep normal-mode controls unavailable unless
 the calibrated Task 3 implementation and its review gate have passed.
+
+`Confirmar equipos antes de partida` is a separate loading-screen one-shot
+command. It hides the overlay for one eligible frame, binds the row containing
+`R95`/`R-95` as allies, then opens an editable ten-slot confirmation summary.
+It must not silently apply ambiguous or unknown-skin matches. A confirmed
+manual card may teach only the loading-surface template domain.
 
 Add a manual editor inside the overlay instead of launching `MainActivity`.
 Expose the player plus four allied slots and, only for ranked, five enemy

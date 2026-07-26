@@ -174,6 +174,11 @@ The supplied personal recording
 `SELECCION HEROES COMPETITIVA.mp4` is the JKM-LX3 reference for ranked mode.
 It is `848 × 392`, the same effective aspect ratio as `2340 × 1080`, and
 contains veto, picks, final adjustments, loading and the start of the match.
+The exact pre-match confirmation surface is the frame retained as
+`app/src/test/resources/ranked_mode/loading_roster_0245.png`, around `02:45`:
+five cards above, five cards below, `VS` at center, and `R95` in the upper
+row's fourth card. This fixture—not elapsed time or a generic loading-screen
+assumption—defines the phase gate and normalized scan geometry.
 
 - Five allied portrait rows are on the left and five enemy portrait rows are
   on the right. The existing normalized side geometry remains the baseline.
@@ -185,9 +190,10 @@ contains veto, picks, final adjustments, loading and the start of the match.
   valid calibration evidence, but it is not evidence that a hero was picked.
 - `R-95` is ally slot four in the recording. `R95`, `R-95` and OCR punctuation
   variants normalize to the same player identity.
-- The ranked loading roster is the first stable screen with all ten titles
-  visible. It provides an automatic reconciliation point before the later
-  explicit scoreboard scan.
+- The ranked loading roster is the first stable screen with ten large hero
+  cards. It provides a pre-match reconciliation point before the later
+  explicit scoreboard scan. The supplied recording has missing card assets, so
+  titles or recognizable artwork cannot be assumed on every card.
 
 Profile avatars and placeholders are visually rich. They must be rejected
 unless the preview/lock state is present and a learned portrait template has a
@@ -254,6 +260,29 @@ one localized title is spatially paired with one portrait card. Stable exact
 titles bind the portrait fingerprint to a hero. Loading-roster and scoreboard
 reconciliation may add additional templates after confirmation, allowing
 different skins without bundling copyrighted artwork or requiring Internet.
+
+Visual templates are context-scoped: a draft-side portrait is never compared
+directly with loading splash art or a scoreboard portrait. Each surface learns
+and matches only fingerprints created from its own calibrated ROI
+representation.
+
+The overlay exposes `Confirmar equipos antes de partida` while the loading
+roster is visible:
+
+1. The user activates the action once the two rows of five cards appear.
+2. The overlay hides for one eligible frame.
+3. The row containing normalized player ID `R95`/`R-95` becomes the allied row.
+4. Prior draft/manual assignments remain authoritative when loading artwork is
+   unknown, and a compact editable ten-slot confirmation is shown before
+   changes are applied.
+5. A corrected card may teach a loading-surface template for that skin only
+   after explicit user confirmation.
+
+The personal build does not bundle a scraped library of every skin. That would
+become incomplete whenever the game adds a skin, enlarge the APK substantially,
+and create artwork-licensing concerns. Reliability instead combines prior
+draft evidence, exact localized text when available, context-scoped templates,
+and explicit editable confirmation.
 
 Manual editing must be usable without leaving Honor of Kings:
 
