@@ -38,6 +38,19 @@ object CounterCatalogJson {
                                     }
                                 }
                             }.orEmpty(),
+                            identityAliases = heroObject.optJSONObject("identity_aliases")?.let { aliasesObject ->
+                                HeroIdentityAliases(
+                                    displayTitles = aliasesObject.stringList("display_titles"),
+                                    historicalNames = aliasesObject.stringList("historical_names"),
+                                    localizedAliases = aliasesObject.optJSONObject("localized_aliases")?.let { localizedObject ->
+                                        buildMap {
+                                            localizedObject.keys().forEach { locale ->
+                                                put(locale, localizedObject.stringList(locale))
+                                            }
+                                        }
+                                    }.orEmpty()
+                                )
+                            } ?: HeroIdentityAliases(),
                             metaScore = if (heroObject.has("meta_score")) heroObject.optDouble("meta_score") else null,
                             source = heroObject.optString("source", "global_catalog").trim(),
                             patchLabel = heroObject.optString("patch_label").trim().ifBlank { null },
@@ -53,6 +66,15 @@ object CounterCatalogJson {
             throw IllegalArgumentException("El catálogo JSON no tiene el formato esperado", error)
         }
     }
+
+    private fun JSONObject.stringList(key: String): List<String> =
+        optJSONArray(key)?.let { values ->
+            buildList {
+                for (index in 0 until values.length()) {
+                    add(values.getString(index).trim())
+                }
+            }
+        }.orEmpty()
 
     private fun validateFullAsset(heroes: List<Hero>) {
         require(heroes.isNotEmpty()) { "El catálogo no contiene héroes" }

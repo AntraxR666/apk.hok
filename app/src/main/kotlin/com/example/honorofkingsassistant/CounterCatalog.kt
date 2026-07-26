@@ -10,17 +10,32 @@ data class HeroCounter(
     val confidence: Double = 0.65
 )
 
+data class HeroIdentityAliases(
+    val displayTitles: List<String> = emptyList(),
+    val historicalNames: List<String> = emptyList(),
+    val localizedAliases: Map<String, List<String>> = emptyMap()
+) {
+    fun flattened(): List<String> =
+        (displayTitles + historicalNames + localizedAliases.values.flatten())
+            .filter(String::isNotBlank)
+            .distinct()
+}
+
 data class Hero(
     val id: String,
     val name: String,
     val role: String,
     val counters: List<HeroCounter>,
     val aliases: List<String> = emptyList(),
+    val identityAliases: HeroIdentityAliases = HeroIdentityAliases(),
     val metaScore: Double? = null,
     val source: String = "global_catalog",
     val patchLabel: String? = null,
     val snapshotDate: String? = null
 )
+
+fun Hero.allRecognitionAliases(): List<String> =
+    (aliases + identityAliases.flattened()).distinct()
 
 data class HeroRecommendation(
     val name: String,
@@ -61,7 +76,7 @@ class CounterCatalog(
         heroesById = this.heroes.associateBy { normalize(it.id) }
         heroesByAlias = buildMap {
             this@CounterCatalog.heroes.forEach { hero ->
-                hero.aliases.forEach { alias ->
+                hero.allRecognitionAliases().forEach { alias ->
                     val key = normalize(alias)
                     require(key.isNotBlank()) { "Los alias no pueden estar vacíos" }
                     require(key !in this) { "Los alias de héroe deben ser únicos: $alias" }

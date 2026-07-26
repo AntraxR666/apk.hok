@@ -128,6 +128,9 @@
       "id": "fatih",
       "name": "Fatih",
       "role": "Clash Lane",
+      "identity_aliases": {
+        "display_titles": ["El Conquistador"]
+      },
       "counters": [
         {
           "hero_name": "Nezha",
@@ -190,6 +193,9 @@
       "id": "flowborn_mage",
       "name": "Flowborn (Mage)",
       "role": "Mid Lane",
+      "identity_aliases": {
+        "display_titles": ["Corazón Arcano"]
+      },
       "counters": [
         {
           "hero_name": "Sima Yi",
@@ -223,6 +229,9 @@
       "id": "flowborn_tank",
       "name": "Flowborn (Tank)",
       "role": "Clash Lane",
+      "identity_aliases": {
+        "display_titles": ["Puño de la Paz"]
+      },
       "counters": [
         {
           "hero_name": "Lu Bu",
@@ -473,6 +482,9 @@
       "id": "angela",
       "name": "Angela",
       "role": "Mid Lane",
+      "identity_aliases": {
+        "display_titles": ["La Maga de Fuego"]
+      },
       "counters": [
         {
           "hero_name": "Yao",
@@ -664,6 +676,9 @@
       "id": "augran",
       "name": "Augran",
       "role": "Jungler",
+      "identity_aliases": {
+        "display_titles": ["El Sumo Sacerdote"]
+      },
       "counters": [
         {
           "hero_name": "Angela",
@@ -695,6 +710,9 @@
       "id": "bai_qi",
       "name": "Bai Qi",
       "role": "Clash Lane",
+      "identity_aliases": {
+        "display_titles": ["El Arma Suprema"]
+      },
       "counters": [
         {
           "hero_name": "Zhuangzi",
@@ -757,6 +775,9 @@
       "id": "cai_yan",
       "name": "Cai Yan",
       "role": "Roamer/Support",
+      "identity_aliases": {
+        "display_titles": ["La Alegre Canción"]
+      },
       "counters": [
         {
           "hero_name": "Nezha",
@@ -788,6 +809,9 @@
       "id": "chano",
       "name": "Chano",
       "role": "Farm Lane",
+      "identity_aliases": {
+        "display_titles": ["El Último Lobo"]
+      },
       "counters": [
         {
           "hero_name": "Donghuang",
@@ -1193,6 +1217,10 @@
       "id": "dr_bian",
       "name": "Dr Bian",
       "role": "Mid Lane",
+      "identity_aliases": {
+        "display_titles": ["El Boticario"],
+        "historical_names": ["Dr. Bian"]
+      },
       "counters": [
         {
           "hero_name": "Yang Jian",
@@ -2334,6 +2362,9 @@
       "id": "mai_shiranui",
       "name": "Mai Shiranui",
       "role": "Mid Lane",
+      "identity_aliases": {
+        "display_titles": ["La Ninja de Fuego"]
+      },
       "counters": [
         {
           "hero_name": "Alessio",
@@ -2892,6 +2923,9 @@
       "id": "shouyue",
       "name": "Shouyue",
       "role": "Farm Lane",
+      "identity_aliases": {
+        "display_titles": ["El Francotirador"]
+      },
       "counters": [
         {
           "hero_name": "Liu Bang",
@@ -3239,6 +3273,9 @@
       "id": "xuance",
       "name": "Xuance",
       "role": "Jungler",
+      "identity_aliases": {
+        "display_titles": ["La Hoz Justiciera"]
+      },
       "counters": [
         {
           "hero_name": "Daji",
