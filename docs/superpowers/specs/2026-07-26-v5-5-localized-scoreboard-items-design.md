@@ -171,6 +171,43 @@ enum class AssistantStage { PAUSED, DRAFT, IN_GAME }
 - Recommend by requested lane, missing role, allied synergy, damage balance,
   frontline, control, safety, and the user's preferred heroes.
 - Discover the enemy team later from loading or scoreboard recovery.
+- Use normalized regions rather than fixed pixels so the JKM-LX3
+  `2340 × 1080` frame and reduced capture frame share one geometry model.
+
+### Normal-mode visual calibration
+
+The linked 24:01 normal-match recording was sampled at the smallest useful set
+of transitions instead of being transcribed or processed frame by frame:
+
+- `00:00`: normal `Equipo 5v5` lobby and `Buscar partida`.
+- `00:45`: normal hero selection with hero catalog on the left, selected hero
+  in the center, five allied pick rows on the right, timer at the upper right,
+  and confirm action at the lower right.
+- `01:00` and `01:50`: the same selection layout while allied picks become
+  populated; no enemy picks are exposed.
+- `02:10`: loading screen with five allied cards on the upper row and five
+  enemy cards on the lower row.
+- `23:00`: return to the game lobby after the match.
+
+The selection detector uses conservative normalized envelopes:
+
+```text
+hero catalog:       x 0.02..0.22, y 0.05..0.86
+selected hero:      x 0.22..0.76, y 0.05..0.92
+allied pick column: x 0.76..0.97, y 0.04..0.88
+confirm action:     x 0.80..0.98, y 0.78..0.98
+```
+
+These are classification envelopes, not OCR crop rectangles. Exact crop
+rectangles are derived inside each detected envelope from portrait and text
+edges. The detector must require the allied column plus the absence of a ranked
+ban/enemy-pick layout across three eligible frames before selecting
+`NORMAL_BLIND`. If evidence is incomplete, it remains in `AUTO` and asks for a
+manual match-mode selection instead of guessing.
+
+The loading layout may confirm provisional identities, but the on-demand
+scoreboard remains the authoritative recovery surface because the reference
+recording is compressed and some loading-card assets are missing.
 
 ### Automatic match mode
 
