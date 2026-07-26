@@ -22,9 +22,36 @@ data class AssistantUiState(
     val playerPickLocked: Boolean = false,
     val draftFlow: DraftFlowState = DraftFlowResolver.resolve(DraftBoardState.empty(), null),
     val learnedPortraitCount: Int = 0,
+    val recognition: RecognitionCalibrationState = RecognitionCalibrationState.UNCALIBRATED,
+    val loadingRosterReconciliation: LoadingRosterReconciliationResult? = null,
     val diagnostics: VisionDiagnostics = VisionDiagnostics(),
     val lastUpdatedAtMs: Long = System.currentTimeMillis()
 )
+
+object RecognitionUiStatePolicy {
+    fun apply(
+        state: AssistantUiState,
+        baseStatus: String,
+        calibration: RecognitionCalibrationState
+    ): AssistantUiState {
+        val recognitionStatus = when (calibration.readiness) {
+            RecognitionReadiness.UNCALIBRATED ->
+                "Reconocimiento visual sin calibrar; calibra desde la galería o usa entrada manual"
+            RecognitionReadiness.READY -> {
+                val templateLabel =
+                    if (calibration.storedTemplateCount == 1) "plantilla" else "plantillas"
+                val heroLabel =
+                    if (calibration.coveredHeroCount == 1) "héroe cubierto" else "héroes cubiertos"
+                "${calibration.storedTemplateCount} $templateLabel · " +
+                    "${calibration.coveredHeroCount} $heroLabel"
+            }
+        }
+        return state.copy(
+            status = "$baseStatus · $recognitionStatus",
+            recognition = calibration
+        )
+    }
+}
 
 object AssistantSessionBus {
     private val listeners = CopyOnWriteArraySet<(AssistantUiState) -> Unit>()

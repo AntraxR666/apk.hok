@@ -56,6 +56,8 @@ class ScreenCaptureService : Service() {
     private var playerPickOverride: PlayerPickOverride = PlayerPickOverride.AUTO
     private var lastSlotFingerprints: List<SlotPortraitFingerprint> = emptyList()
     private var learnedPortraitCount = 0
+    private var lastRecognition = RecognitionCalibrationState.UNCALIBRATED
+    private var lastLoadingRosterReconciliation: LoadingRosterReconciliationResult? = null
     private var lastVisionDiagnostics = VisionDiagnostics()
     private val manualAllies = linkedSetOf<String>()
     private val manualEnemies = linkedSetOf<String>()
@@ -94,6 +96,7 @@ class ScreenCaptureService : Service() {
             callbackExecutor = callbackExecutor
         )
         matchMode = visionEngine.matchModeState()
+        lastRecognition = visionEngine.recognitionCalibration()
         createNotificationChannel()
     }
 
@@ -231,7 +234,10 @@ class ScreenCaptureService : Service() {
                     val teamSide = if (side == TeamSide.ALLY.name) TeamSide.ALLY else TeamSide.ENEMY
                     if (teamSide == TeamSide.ALLY) manualAllies += heroName else manualEnemies += heroName
                     val learned = learnFromCurrentPreview(heroName, teamSide)
-                    if (learned) learnedPortraitCount++
+                    if (learned) {
+                        learnedPortraitCount++
+                        lastRecognition = visionEngine.recognitionCalibration()
+                    }
                     publishCurrent(
                         if (learned) "Corrección guardada; el retrato quedó aprendido localmente"
                         else "Héroe añadido manualmente"
@@ -268,14 +274,19 @@ class ScreenCaptureService : Service() {
             updateCaptureSurfaceForStage()
             startOverlayService()
             AssistantSessionBus.publish(
-                AssistantUiState(
-                    active = true,
-                    status = "Asistente listo para ${PersonalDeviceProfile.MODEL}. Elige Selección o Partida.",
-                    selectedStage = selectedStage,
-                    suggestedStage = null,
-                    inputMode = inputMode,
-                    matchMode = matchMode,
-                    enemyOnRight = enemyOnRight
+                RecognitionUiStatePolicy.apply(
+                    state = AssistantUiState(
+                        active = true,
+                        selectedStage = selectedStage,
+                        suggestedStage = null,
+                        inputMode = inputMode,
+                        matchMode = matchMode,
+                        enemyOnRight = enemyOnRight,
+                        recognition = lastRecognition
+                    ),
+                    baseStatus =
+                        "Asistente listo para ${PersonalDeviceProfile.MODEL}. Elige Selección o Partida.",
+                    calibration = lastRecognition
                 )
             )
             START_NOT_STICKY
@@ -331,6 +342,7 @@ class ScreenCaptureService : Service() {
         lastScreenMode = ScreenMode.UNKNOWN
         lastSubphase = DraftSubphase.UNKNOWN
         lastSlotFingerprints = emptyList()
+        lastLoadingRosterReconciliation = null
         manualAllies.clear()
         manualEnemies.clear()
         playerPickOverride = PlayerPickOverride.AUTO
@@ -460,6 +472,7 @@ class ScreenCaptureService : Service() {
             bitmap = bitmap,
             onResult = { result ->
                 lastVisionDiagnostics = result.diagnostics
+                lastRecognition = result.recognition
                 lastScreenMode = result.screenMode
                 lastSubphase = result.subphase
                 val previousEffectiveMatchMode = matchMode.effective
@@ -472,6 +485,7 @@ class ScreenCaptureService : Service() {
                     lastBoard = DraftBoardState.empty(result.screenMode)
                     lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
                     lastSlotFingerprints = emptyList()
+                    lastLoadingRosterReconciliation = null
                 }
                 suggestedStage = AssistantStagePolicy.suggest(
                     selectedStage = selectedStage,
@@ -506,13 +520,49 @@ class ScreenCaptureService : Service() {
                         lastSlotFingerprints = emptyList()
                     }
                 }
+                if (matchMode.effective == MatchMode.RANKED_DRAFT &&
+                    result.subphase == DraftSubphase.LOADING
+                ) {
+                    val preservedManual = lastLoadingRosterReconciliation
+                        ?.assignments
+                        .orEmpty()
+                        .filter { it.preservedManualEvidence }
+                        .map { assignment ->
+                            PreservedRosterIdentity(
+                                side = assignment.side,
+                                slotIndex = assignment.slotIndex,
+                                heroName = assignment.heroName,
+                                confidence = assignment.confidence,
+                                isManual = true
+                            )
+                        }
+                    val routed = RankedLoadingSessionStateRouter.route(
+                        state = AssistantSessionBus.state.copy(
+                            snapshot = lastVisionSnapshot,
+                            playerSlot = lastPlayerSlot,
+                            manualPlayerSlotIndex = manualPlayerSlotIndex
+                        ),
+                        result = result,
+                        configuredPlayerName = AssistantPreferences.getPlayerName(this),
+                        preserved = preservedManual
+                    )
+                    lastLoadingRosterReconciliation = routed.loadingRosterReconciliation
+                    lastPlayerSlot = routed.playerSlot
+                    lastVisionSnapshot = routed.snapshot
+                }
 
                 val stabilizedResult = result.copy(board = lastBoard)
                 val status = when (result.subphase) {
                     DraftSubphase.BAN -> "Fase de veto detectada; preparando amenazas prioritarias"
                     DraftSubphase.PICK -> buildDraftStatus(stabilizedResult)
                     DraftSubphase.ADJUSTMENTS -> "Últimos ajustes detectados; composición cerrada y plan final preparado"
-                    DraftSubphase.LOADING -> "Pantalla de carga detectada; esperando el inicio de la partida"
+                    DraftSubphase.LOADING -> {
+                        val reconciliation = lastLoadingRosterReconciliation
+                        val resolved = reconciliation?.assignments?.size ?: 0
+                        val conflicts = reconciliation?.conflicts?.size ?: 0
+                        "Pantalla de carga detectada; $resolved/10 reconciliados" +
+                            if (conflicts > 0) " · $conflicts conflictos para revisar" else ""
+                    }
                     DraftSubphase.IN_GAME -> "Parece que comenzó la partida; confirma el cambio desde la burbuja"
                     DraftSubphase.UNKNOWN -> when (result.screenMode) {
                         ScreenMode.DRAFT -> buildDraftStatus(stabilizedResult)
@@ -638,37 +688,45 @@ class ScreenCaptureService : Service() {
             automaticPlayerPickLocked,
             playerPickOverride
         )
+        val baseState = AssistantUiState(
+            active = true,
+            status = "",
+            selectedStage = selectedStage,
+            suggestedStage = suggestedStage,
+            inputMode = inputMode,
+            matchMode = matchMode,
+            snapshot = merged,
+            recommendations = recommendations,
+            strategy = strategy,
+            enemyOnRight = enemyOnRight,
+            board = lastBoard,
+            screenMode = lastScreenMode,
+            subphase = lastSubphase,
+            playerSlot = lastPlayerSlot,
+            manualPlayerSlotIndex = manualPlayerSlotIndex,
+            playerPickOverride = playerPickOverride,
+            playerPickLocked = playerPickLocked,
+            draftFlow = flow,
+            learnedPortraitCount = learnedPortraitCount,
+            recognition = lastRecognition,
+            loadingRosterReconciliation = lastLoadingRosterReconciliation,
+            diagnostics = lastVisionDiagnostics
+        )
+        val baseStatus = buildString {
+            append(stagePrefix(selectedStage))
+            append(" · ")
+            append(status)
+            if (requestedRole != null) append(" · Rol: ").append(requestedRole)
+            suggestedStage?.let {
+                append(" · Sugerencia: cambiar a ")
+                append(if (it == AssistantStage.IN_GAME) "Partida" else "Selección")
+            }
+        }
         AssistantSessionBus.publish(
-            AssistantUiState(
-                active = true,
-                status = buildString {
-                    append(stagePrefix(selectedStage))
-                    append(" · ")
-                    append(status)
-                    if (requestedRole != null) append(" · Rol: ").append(requestedRole)
-                    suggestedStage?.let {
-                        append(" · Sugerencia: cambiar a ")
-                        append(if (it == AssistantStage.IN_GAME) "Partida" else "Selección")
-                    }
-                },
-                selectedStage = selectedStage,
-                suggestedStage = suggestedStage,
-                inputMode = inputMode,
-                matchMode = matchMode,
-                snapshot = merged,
-                recommendations = recommendations,
-                strategy = strategy,
-                enemyOnRight = enemyOnRight,
-                board = lastBoard,
-                screenMode = lastScreenMode,
-                subphase = lastSubphase,
-                playerSlot = lastPlayerSlot,
-                manualPlayerSlotIndex = manualPlayerSlotIndex,
-                playerPickOverride = playerPickOverride,
-                playerPickLocked = playerPickLocked,
-                draftFlow = flow,
-                learnedPortraitCount = learnedPortraitCount,
-                diagnostics = lastVisionDiagnostics
+            RecognitionUiStatePolicy.apply(
+                state = baseState,
+                baseStatus = baseStatus,
+                calibration = lastRecognition
             )
         )
         startOverlayService()

@@ -51,24 +51,37 @@ class GalleryCalibrationEngine(
     fun observe(
         portraits: List<GalleryPortraitEvidence>,
         titleLines: List<PositionedTextLine>
-    ): List<GalleryTemplateProposal> = portraits.mapNotNull { portrait ->
-        val pairedLine = titleLines.firstOrNull { line ->
-            line.centerX >= portrait.bounds.left &&
-                line.centerX < portrait.bounds.right &&
-                line.centerY >= portrait.bounds.bottom &&
-                line.centerY <= portrait.bounds.bottom + portrait.bounds.height
-        } ?: return@mapNotNull null
-        val hero = exactHeroByTitle[normalizeHeroRecognitionText(pairedLine.text)]
-            ?: return@mapNotNull null
-        val stabilityKey = CounterCatalog.normalize(hero.name) + ":" + portrait.fingerprint.encode()
-        val count = (stableCounts[stabilityKey] ?: 0) + 1
-        stableCounts[stabilityKey] = count
-        GalleryTemplateProposal(
-            heroName = hero.name,
-            fingerprint = portrait.fingerprint,
-            stableObservations = count,
-            persistenceEligible = count >= requiredStableObservations
-        )
+    ): List<GalleryTemplateProposal> {
+        val candidatesThisFrame = linkedMapOf<String, Pair<Hero, PortraitFingerprint>>()
+        portraits.forEach { portrait ->
+            val pairedLine = titleLines.firstOrNull { line ->
+                line.centerX >= portrait.bounds.left &&
+                    line.centerX < portrait.bounds.right &&
+                    line.centerY >= portrait.bounds.bottom &&
+                    line.centerY <= portrait.bounds.bottom + portrait.bounds.height
+            } ?: return@forEach
+            val hero = exactHeroByTitle[normalizeHeroRecognitionText(pairedLine.text)]
+                ?: return@forEach
+            val stabilityKey =
+                CounterCatalog.normalize(hero.name) + ":" + portrait.fingerprint.encode()
+            candidatesThisFrame.putIfAbsent(stabilityKey, hero to portrait.fingerprint)
+        }
+
+        val nextStableCounts = linkedMapOf<String, Int>()
+        val proposals = candidatesThisFrame.map { (stabilityKey, evidence) ->
+            val (hero, fingerprint) = evidence
+            val count = (stableCounts[stabilityKey] ?: 0) + 1
+            nextStableCounts[stabilityKey] = count
+            GalleryTemplateProposal(
+                heroName = hero.name,
+                fingerprint = fingerprint,
+                stableObservations = count,
+                persistenceEligible = count >= requiredStableObservations
+            )
+        }
+        stableCounts.clear()
+        stableCounts.putAll(nextStableCounts)
+        return proposals
     }
 
     fun persist(

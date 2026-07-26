@@ -11,6 +11,14 @@ class RecognitionBootstrapTest {
         val store = PortraitTemplateStore(InMemoryPortraitTemplatePersistence())
 
         assertEquals(RecognitionReadiness.UNCALIBRATED, store.readiness())
+        assertEquals(
+            RecognitionCalibrationState(
+                readiness = RecognitionReadiness.UNCALIBRATED,
+                storedTemplateCount = 0,
+                coveredHeroCount = 0
+            ),
+            store.calibrationState()
+        )
     }
 
     @Test
@@ -86,6 +94,80 @@ class RecognitionBootstrapTest {
 
         assertEquals(2, store.templates().getValue("angela").size)
         assertEquals(RecognitionReadiness.READY, store.readiness())
+        assertEquals(2, store.calibrationState().storedTemplateCount)
+        assertEquals(1, store.calibrationState().coveredHeroCount)
+    }
+
+    @Test
+    fun duplicateGalleryEvidenceInOneFrameCountsOnce() {
+        val engine = GalleryCalibrationEngine(
+            heroes = listOf(angela()),
+            requiredStableObservations = 2
+        )
+        val portrait = GalleryPortraitEvidence(
+            cardIndex = 1,
+            bounds = PixelRect(100, 40, 160, 100),
+            fingerprint = fingerprint(51)
+        )
+
+        val proposals = engine.observe(
+            portraits = listOf(portrait, portrait.copy(cardIndex = 2)),
+            titleLines = listOf(PositionedTextLine("La Maga de Fuego", 130, 112))
+        )
+
+        assertEquals(1, proposals.size)
+        assertEquals(1, proposals.single().stableObservations)
+        assertFalse(proposals.single().persistenceEligible)
+    }
+
+    @Test
+    fun missingMiddleGalleryFrameResetsConsecutiveEvidence() {
+        val engine = GalleryCalibrationEngine(
+            heroes = listOf(angela()),
+            requiredStableObservations = 2
+        )
+        val portrait = GalleryPortraitEvidence(
+            cardIndex = 1,
+            bounds = PixelRect(100, 40, 160, 100),
+            fingerprint = fingerprint(52)
+        )
+        val title = listOf(PositionedTextLine("La Maga de Fuego", 130, 112))
+
+        engine.observe(listOf(portrait), title)
+        engine.observe(emptyList(), emptyList())
+        val afterGap = engine.observe(listOf(portrait), title).single()
+
+        assertEquals(1, afterGap.stableObservations)
+        assertFalse(afterGap.persistenceEligible)
+    }
+
+    @Test
+    fun contradictoryGalleryTitleResetsPreviousProposal() {
+        val engine = GalleryCalibrationEngine(
+            heroes = listOf(angela(), lam()),
+            requiredStableObservations = 2
+        )
+        val portrait = GalleryPortraitEvidence(
+            cardIndex = 1,
+            bounds = PixelRect(100, 40, 160, 100),
+            fingerprint = fingerprint(53)
+        )
+
+        engine.observe(
+            listOf(portrait),
+            listOf(PositionedTextLine("La Maga de Fuego", 130, 112))
+        )
+        engine.observe(
+            listOf(portrait),
+            listOf(PositionedTextLine("El Último Lobo", 130, 112))
+        )
+        val angelaAgain = engine.observe(
+            listOf(portrait),
+            listOf(PositionedTextLine("La Maga de Fuego", 130, 112))
+        ).single()
+
+        assertEquals(1, angelaAgain.stableObservations)
+        assertFalse(angelaAgain.persistenceEligible)
     }
 
     private fun angela() = Hero(
@@ -94,6 +176,14 @@ class RecognitionBootstrapTest {
         role = "Mid",
         counters = emptyList(),
         identityAliases = HeroIdentityAliases(displayTitles = listOf("La Maga de Fuego"))
+    )
+
+    private fun lam() = Hero(
+        id = "lam",
+        name = "Lam",
+        role = "Jungle",
+        counters = emptyList(),
+        identityAliases = HeroIdentityAliases(displayTitles = listOf("El Último Lobo"))
     )
 
     private fun fingerprint(seed: Int) = PortraitFingerprint(

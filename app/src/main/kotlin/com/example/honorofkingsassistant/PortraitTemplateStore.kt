@@ -9,6 +9,26 @@ enum class RecognitionReadiness {
     READY
 }
 
+data class RecognitionCalibrationState(
+    val readiness: RecognitionReadiness,
+    val storedTemplateCount: Int,
+    val coveredHeroCount: Int
+) {
+    init {
+        require(storedTemplateCount >= 0)
+        require(coveredHeroCount >= 0)
+        require(coveredHeroCount <= storedTemplateCount)
+    }
+
+    companion object {
+        val UNCALIBRATED = RecognitionCalibrationState(
+            readiness = RecognitionReadiness.UNCALIBRATED,
+            storedTemplateCount = 0,
+            coveredHeroCount = 0
+        )
+    }
+}
+
 interface PortraitTemplatePersistence {
     fun read(): String?
 
@@ -64,12 +84,18 @@ class PortraitTemplateStore(
     fun templates(): Map<String, List<PortraitFingerprint>> = loadAll()
 
     @Synchronized
-    fun readiness(): RecognitionReadiness =
-        if (loadAll().isEmpty()) {
-            RecognitionReadiness.UNCALIBRATED
-        } else {
-            RecognitionReadiness.READY
-        }
+    fun readiness(): RecognitionReadiness = calibrationState().readiness
+
+    @Synchronized
+    fun calibrationState(): RecognitionCalibrationState {
+        val templates = loadAll()
+        if (templates.isEmpty()) return RecognitionCalibrationState.UNCALIBRATED
+        return RecognitionCalibrationState(
+            readiness = RecognitionReadiness.READY,
+            storedTemplateCount = templates.values.sumOf(List<PortraitFingerprint>::size),
+            coveredHeroCount = templates.size
+        )
+    }
 
     @Synchronized
     fun clear() {

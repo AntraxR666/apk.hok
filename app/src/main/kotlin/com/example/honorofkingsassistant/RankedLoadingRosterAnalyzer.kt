@@ -50,6 +50,59 @@ data class LoadingRosterReconciliationResult(
     val playerSlotIndex: Int?
 )
 
+class RankedLoadingRosterEvidenceExtractor(
+    heroes: List<Hero>
+) {
+    private val exactHeroByTitle = buildMap {
+        heroes.forEach { hero ->
+            sequenceOf(hero.name, hero.id)
+                .plus(hero.identityAliases.displayTitles.asSequence())
+                .map(::normalizeHeroRecognitionText)
+                .filter(String::isNotBlank)
+                .forEach { title -> putIfAbsent(title, hero) }
+        }
+    }
+
+    fun extract(
+        lines: List<PositionedTextLine>,
+        portraitMatches: List<SlotHeroMatch>,
+        frameWidth: Int,
+        frameHeight: Int,
+        configuredPlayerName: String
+    ): List<LoadingRosterCardEvidence> {
+        val geometry = RankedLoadingRosterAnalyzer.geometry(frameWidth, frameHeight)
+        val targetPlayer = PlayerIdentityNormalizer.canonical(configuredPlayerName)
+        val portraitBySlot = portraitMatches.associateBy { it.side to it.slotIndex }
+
+        fun cards(side: TeamSide, regions: List<PixelRect>) =
+            regions.mapIndexed { index, region ->
+                val cardLines = lines.filter { line ->
+                    line.centerX >= region.left &&
+                        line.centerX < region.right &&
+                        line.centerY >= region.top &&
+                        line.centerY < region.bottom
+                }
+                val exactTitle = cardLines.firstNotNullOfOrNull { line ->
+                    exactHeroByTitle[normalizeHeroRecognitionText(line.text)]?.name
+                }
+                val playerName = cardLines.firstOrNull { line ->
+                    targetPlayer.isNotBlank() &&
+                        PlayerIdentityNormalizer.canonical(line.text) == targetPlayer
+                }?.text
+                LoadingRosterCardEvidence(
+                    side = side,
+                    slotIndex = index + 1,
+                    exactTitleHeroName = exactTitle,
+                    portraitHeroName = portraitBySlot[side to (index + 1)]?.heroName,
+                    playerName = playerName
+                )
+            }
+
+        return cards(TeamSide.ALLY, geometry.allyCards) +
+            cards(TeamSide.ENEMY, geometry.enemyCards)
+    }
+}
+
 /**
  * Reconciles the stable ranked loading screen without mutating preserved draft evidence.
  */
@@ -168,5 +221,48 @@ class RankedLoadingRosterAnalyzer {
                 enemyCards = row(ENEMY_TOP, ENEMY_BOTTOM)
             )
         }
+    }
+}
+
+object RankedLoadingSessionStateRouter {
+    fun route(
+        state: AssistantUiState,
+        result: DraftVisionResult,
+        configuredPlayerName: String,
+        preserved: List<PreservedRosterIdentity> = emptyList()
+    ): AssistantUiState {
+        if (result.matchMode.effective != MatchMode.RANKED_DRAFT ||
+            result.subphase != DraftSubphase.LOADING
+        ) {
+            return state
+        }
+        val reconciliation = RankedLoadingRosterAnalyzer().reconcile(
+            cards = result.loadingRosterEvidence,
+            preserved = preserved,
+            configuredPlayerName = configuredPlayerName,
+            manualPlayerSlotIndex = state.manualPlayerSlotIndex
+        )
+
+        fun mergedSide(side: TeamSide, existing: List<ConfirmedHero>): List<ConfirmedHero> =
+            (reconciliation.assignments.asSequence()
+                .filter { it.side == side }
+                .map { assignment ->
+                    ConfirmedHero(assignment.heroName, side, assignment.confidence)
+                }
+                .toList() + existing)
+                .distinctBy { CounterCatalog.normalize(it.heroName) }
+
+        val snapshot = state.snapshot.copy(
+            allies = mergedSide(TeamSide.ALLY, state.snapshot.allies),
+            enemies = mergedSide(TeamSide.ENEMY, state.snapshot.enemies)
+        )
+        val playerSlot = reconciliation.playerSlotIndex?.let { slot ->
+            PlayerSlotDetection(slot, TeamSide.ALLY, 1.0)
+        } ?: state.playerSlot
+        return state.copy(
+            snapshot = snapshot,
+            playerSlot = playerSlot,
+            loadingRosterReconciliation = reconciliation
+        )
     }
 }

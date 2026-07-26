@@ -78,6 +78,23 @@ class HeroPortraitMatcher(
                 }
             }
 
+    fun loadingFingerprints(bitmap: Bitmap): List<SlotPortraitFingerprint> {
+        return RankedRasterRoiAnalyzer
+            .loadingCards(BitmapArgbRaster(bitmap))
+            .mapNotNull { card ->
+                if (card.visualConfidence < MIN_VISUAL_CONFIDENCE) {
+                    null
+                } else {
+                    SlotPortraitFingerprint(
+                        side = card.side,
+                        slotIndex = card.slotIndex,
+                        fingerprint = card.fingerprint,
+                        visualConfidence = card.visualConfidence
+                    )
+                }
+            }
+    }
+
     fun match(fingerprints: List<SlotPortraitFingerprint>): List<HeroObservation> =
         matchSlots(fingerprints).map { match ->
             HeroObservation(match.heroName, match.side, match.confidence)

@@ -24,6 +24,7 @@ class DraftVisionEngine(
     private val matcher = HeroNameMatcher(heroes)
     private val portraitTemplateStore = PortraitTemplateStore(context)
     private val portraitMatcher = HeroPortraitMatcher(catalog, portraitTemplateStore)
+    private val loadingEvidenceExtractor = RankedLoadingRosterEvidenceExtractor(catalog.heroes)
     private val processing = AtomicBoolean(false)
     private val diagnosticsTracker = VisionDiagnosticsTracker()
     private val bitmapAnalyzer = DraftBitmapAnalyzer(enemyOnRight)
@@ -61,6 +62,9 @@ class DraftVisionEngine(
         portraitMatcher.learn(heroName, slot)
 
     fun recognitionReadiness(): RecognitionReadiness = portraitTemplateStore.readiness()
+
+    fun recognitionCalibration(): RecognitionCalibrationState =
+        portraitTemplateStore.calibrationState()
 
     fun diagnostics(): VisionDiagnostics = diagnosticsTracker.snapshot()
 
@@ -128,12 +132,17 @@ class DraftVisionEngine(
                         val slotFingerprints = runCatching {
                             when (matchMode.effective) {
                                 MatchMode.AUTO -> emptyList()
-                                MatchMode.RANKED_DRAFT ->
+                                MatchMode.RANKED_DRAFT -> if (
+                                    modeVisuals.subphase == DraftSubphase.LOADING
+                                ) {
+                                    portraitMatcher.loadingFingerprints(bitmap)
+                                } else {
                                     portraitMatcher.fingerprints(
                                         bitmap,
                                         enemyOnRight,
                                         modeVisuals.board
                                     )
+                                }
                                 MatchMode.NORMAL_BLIND ->
                                     portraitMatcher.normalFingerprints(bitmap)
                             }
@@ -173,6 +182,20 @@ class DraftVisionEngine(
                             frameHeight = ocrBitmap.height,
                             enemyOnRight = enemyOnRight
                         )
+                        val loadingRosterEvidence = if (
+                            matchMode.effective == MatchMode.RANKED_DRAFT &&
+                            modeVisuals.subphase == DraftSubphase.LOADING
+                        ) {
+                            loadingEvidenceExtractor.extract(
+                                lines = textLines,
+                                portraitMatches = portraitMatcher.matchSlots(slotFingerprints),
+                                frameWidth = ocrBitmap.width,
+                                frameHeight = ocrBitmap.height,
+                                configuredPlayerName = playerName
+                            )
+                        } else {
+                            emptyList()
+                        }
                         onResult(
                             DraftVisionResult(
                                 observations = observations,
@@ -193,7 +216,8 @@ class DraftVisionEngine(
                                     null
                                 },
                                 slotFingerprints = slotFingerprints,
-                                recognitionReadiness = portraitTemplateStore.readiness(),
+                                recognition = portraitTemplateStore.calibrationState(),
+                                loadingRosterEvidence = loadingRosterEvidence,
                                 diagnostics = diagnostics
                             )
                         )
