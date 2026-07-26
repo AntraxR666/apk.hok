@@ -1,0 +1,55 @@
+{
+  "source": {
+    "file": "SELECCION HEROES COMPETITIVA.mp4",
+    "sha256": "BF1FF5835FFB7BA547266217756CBFE0AC7231F4386582294611FCE4A8DC8B1D",
+    "width": 848,
+    "height": 392,
+    "duration_seconds": 237.52,
+    "device_profile": "Huawei JKM-LX3 2340x1080 landscape",
+    "notes": [
+      "Local-only frame extraction; the recording was not uploaded.",
+      "The source has irregular timestamps and repeats a short loading/in-game sequence near 02:59."
+    ]
+  },
+  "phases": {
+    "ban": "00:03.5-00:29.5",
+    "ban_summary": "00:30.0-00:31.5",
+    "picks": "00:32.0-02:17.0",
+    "r95_pick_turn": "01:44.0-02:00.5",
+    "final_adjustments": "02:17.5-02:38.0",
+    "loading_roster": "02:40.5-02:47.5",
+    "in_game": "02:48+"
+  },
+  "ranked_selection": {
+    "phase_header": [0.39, 0.005, 0.61, 0.075],
+    "center_gallery": [0.255, 0.10, 0.745, 0.895],
+    "left_portrait_x": [0.063, 0.119],
+    "right_portrait_x": [0.888, 0.944],
+    "slot_top_y": [0.108, 0.269, 0.431, 0.592, 0.753],
+    "portrait_slot_height": 0.119,
+    "primary_action": [0.43, 0.79, 0.575, 0.88],
+    "help_choose_action": [0.62, 0.79, 0.72, 0.88],
+    "identity_rule": "Side text is player identity, role, or Jugador N. Hero identity must not come from side-row OCR.",
+    "r95": {
+      "normalized_aliases": ["R95", "R-95"],
+      "ally_slot": 4,
+      "role_text": "Línea de choque"
+    }
+  },
+  "loading_roster": {
+    "ally_row_y": [0.00, 0.49],
+    "enemy_row_y": [0.54, 1.00],
+    "card_centers_x": [0.24, 0.37, 0.50, 0.63, 0.76],
+    "card_width": 0.11,
+    "r95_ally_card": 4,
+    "use": "Automatic high-confidence reconciliation using localized title plus portrait and player name."
+  },
+  "fixtures": {
+    "ban_active_0008.png": "66514503484B6A847FB75B7488B016875A67D66C8A4949AE41311C6799D598C8",
+    "ban_summary_0030.png": "E917509EC7E82170A816C7312DD0743B4D36E66C23F5E7308B7FFE85EA08FA81",
+    "pick_partial_0104.png": "02EA84FF9E90F6625472B4B410914343113B08A065F2452374B6F731C436DD3E",
+    "r95_pick_turn_0148.png": "53E869657894AE032337965FE9E467EEEBC9F8BA7014540C8C46B8003C8A2355",
+    "final_adjustments_0224.png": "DB59FBD563FAB7E2471926CE2358AA79D74812068255F4CD502F45D3BDE6FAE0",
+    "loading_roster_0245.png": "4A94DFB818EA76C82B2D4B47262814F6C76526B2B707422E7492B3A46B9E6A74"
+  }
+}

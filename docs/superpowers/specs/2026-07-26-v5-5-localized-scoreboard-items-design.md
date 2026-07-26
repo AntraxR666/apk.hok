@@ -160,10 +160,38 @@ enum class AssistantStage { PAUSED, DRAFT, IN_GAME }
 ### Ranked draft
 
 - Track allies, enemies, bans, empty slots, previews, and confirmed picks.
+- Never interpret player usernames or `Jugador N` labels as hero identity.
+  During selection, hero identity in the side columns comes from portrait
+  evidence plus preview/lock markers.
 - Recommend Top 3 while the user's pick is pending.
 - Score direct matchup coverage, allied synergy, missing role, frontline,
   physical/magic balance, control, and worst exposed matchup.
 - After the user's pick is fixed, replace Top 3 with composition analysis.
+
+### Ranked visual calibration
+
+The supplied personal recording
+`SELECCION HEROES COMPETITIVA.mp4` is the JKM-LX3 reference for ranked mode.
+It is `848 × 392`, the same effective aspect ratio as `2340 × 1080`, and
+contains veto, picks, final adjustments, loading and the start of the match.
+
+- Five allied portrait rows are on the left and five enemy portrait rows are
+  on the right. The existing normalized side geometry remains the baseline.
+- Left text is the player username/role. Right text is `Jugador 1..5`.
+  Neither text region is a hero-name ROI.
+- A confirmed or previewed hero is represented by a portrait and a blue/red
+  lock diamond; the active turn has a gold frame/countdown.
+- The center gallery contains localized titles for every visible card. It is
+  valid calibration evidence, but it is not evidence that a hero was picked.
+- `R-95` is ally slot four in the recording. `R95`, `R-95` and OCR punctuation
+  variants normalize to the same player identity.
+- The ranked loading roster is the first stable screen with all ten titles
+  visible. It provides an automatic reconciliation point before the later
+  explicit scoreboard scan.
+
+Profile avatars and placeholders are visually rich. They must be rejected
+unless the preview/lock state is present and a learned portrait template has a
+sufficient best-versus-second-best margin.
 
 ### Normal blind
 
@@ -213,6 +241,33 @@ recording is compressed and some loading-card assets are missing.
 
 Automatic mode may suggest ranked or normal from visible layout evidence. A
 manual selection always wins and remains active for the session.
+
+### Recognition bootstrap and manual fallback
+
+An empty portrait-template store is a valid first-run state and must be shown
+as `Reconocimiento visual sin calibrar`; the app must never claim that the 116
+heroes are visually recognizable merely because their names exist in the
+catalog.
+
+`Calibrar galería` learns only from deliberate gallery/draft-grid scans where
+one localized title is spatially paired with one portrait card. Stable exact
+titles bind the portrait fingerprint to a hero. Loading-roster and scoreboard
+reconciliation may add additional templates after confirmation, allowing
+different skins without bundling copyrighted artwork or requiring Internet.
+
+Manual editing must be usable without leaving Honor of Kings:
+
+1. `Manual` opens an editor inside the existing overlay.
+2. The editor exposes the player slot, four remaining ally slots and, only in
+   ranked mode, five enemy slots.
+3. Tapping a slot opens a role-filtered, scrollable hero list. Search accepts
+   canonical names and verified Spanish titles; the keyboard is optional.
+4. One tap assigns or replaces the hero and immediately returns to the compact
+   draft summary. A separate remove action clears the slot.
+5. Manual assignments have confidence `1.0`, survive automatic scans for the
+   current session, and may teach the matching slot portrait only after an
+   explicit confirmation.
+6. Normal mode never shows enemy slots during selection.
 
 ## 4. On-demand scoreboard recovery
 
@@ -408,13 +463,18 @@ The universal/commercial line begins only after the personal 1.0 device gates pa
 Version 1.0 personal is complete only when:
 
 1. All twelve supplied Spanish titles resolve to the correct stable identity.
-2. Gallery calibration can add a new verified alias without recompiling.
+2. Gallery calibration can add a new verified alias and portrait template
+   without recompiling, while an empty template store is reported honestly.
 3. Ranked recommendations score visible enemy matchups; normal-blind
    recommendations ignore unseen enemies and score allied composition instead.
-4. The overlay is readable, translucent, draggable only by its header, and fully
-   scrollable at 2340x1080 landscape.
-5. `Verificar equipos e ítems` performs one-shot capture, hides/restores the
+4. Ranked side usernames never resolve as heroes; fixture-backed portrait/lock
+   evidence and loading reconciliation handle the supplied ranked recording,
+   including normalized `R-95` ally slot four.
+5. The overlay is readable, translucent, draggable only by its header, and fully
+   scrollable at 2340x1080 landscape. Its in-overlay manual editor can assign,
+   replace and clear every applicable team slot without leaving the game.
+6. `Verificar equipos e ítems` performs one-shot capture, hides/restores the
    overlay, and never silently applies a conflict.
-6. Item advice names an existing catalog item and explains the observed reason.
-7. All unit, fixture, emulator, lint, build, offline-permission, and Huawei
+7. Item advice names an existing catalog item and explains the observed reason.
+8. All unit, fixture, emulator, lint, build, offline-permission, and Huawei
    acceptance gates pass.

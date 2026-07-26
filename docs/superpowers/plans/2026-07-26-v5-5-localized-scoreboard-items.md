@@ -332,10 +332,12 @@ Require allied-column evidence, selected-hero evidence, no enemy-pick column, an
 
 - [ ] **Step 7: Route normal candidates before ranked tracking**
 
-Preserve OCR center coordinates in an internal `PositionedHeroCandidate`.
+Preserve OCR center coordinates and candidate provenance in an internal
+`PositionedHeroCandidate`.
 For `RANKED_DRAFT`, keep the existing side/portrait/board path. For
-`NORMAL_BLIND`, accept only candidates inside one of the five measured ally
-rows, disable ranked portrait regions, publish no enemy observations, and
+`NORMAL_BLIND`, recognize only portrait evidence from the five measured ally
+portrait regions; row text is a player username and must never resolve as a
+hero. Disable ranked portrait regions, publish no enemy observations, and
 bypass ranked 10/10 completion logic. For unresolved `AUTO`, publish no hero
 observations until three-frame evidence is decisive.
 
@@ -365,6 +367,81 @@ git add app/src/main/kotlin/com/example/honorofkingsassistant app/src/test/java/
 git commit -m "feat(match): add calibrated normal blind mode"
 ```
 
+### Task 3B: Ranked Calibration, Honest Recognition Bootstrap, and Loading Reconciliation
+
+**Files:**
+- Create: `docs/ranked_mode_calibration_2026-07-26.json`
+- Use test fixtures: `app/src/test/resources/ranked_mode/*.png`
+- Modify: `app/src/main/kotlin/com/example/honorofkingsassistant/DraftVisionEngine.kt`
+- Modify: `app/src/main/kotlin/com/example/honorofkingsassistant/DraftScreenCalibration.kt`
+- Modify: `app/src/main/kotlin/com/example/honorofkingsassistant/HeroPortraitMatcher.kt`
+- Modify: `app/src/main/kotlin/com/example/honorofkingsassistant/PortraitTemplateStore.kt`
+- Create: `app/src/main/kotlin/com/example/honorofkingsassistant/RankedLoadingRosterAnalyzer.kt`
+- Create: `app/src/main/kotlin/com/example/honorofkingsassistant/GalleryCalibrationEngine.kt`
+- Create: `app/src/test/java/com/example/honorofkingsassistant/RankedVideoCalibrationTest.kt`
+- Create: `app/src/test/java/com/example/honorofkingsassistant/RecognitionBootstrapTest.kt`
+
+**Interfaces:**
+- Consumes: the six fixture frames and the exact calibration JSON from the
+  user's JKM-LX3 recording.
+- Produces: ranked portrait/lock observations, normalized `R95 == R-95`
+  player binding, `RecognitionReadiness`, deliberate gallery template
+  proposals, and a loading-roster reconciliation result.
+
+- [ ] **Step 1: Write fixture-backed failing ranked tests**
+
+Prove that:
+
+- side-row OCR such as `R-95`, roles and `Jugador N` never resolves as a hero;
+- profile-avatar placeholders are not confirmed picks;
+- portrait plus preview/lock markers is the only ranked live-draft identity
+  route;
+- R-95 resolves to ally slot four in the supplied frame;
+- the loading frame exposes two rows of five cards for reconciliation.
+
+- [ ] **Step 2: Prove first-run recognition is currently unready**
+
+Add a failing test asserting that an empty `PortraitTemplateStore` reports
+`UNCALIBRATED` rather than silently returning an empty draft while the UI
+claims scanning is active.
+
+- [ ] **Step 3: Implement ranked phase and slot evidence**
+
+Use exact Spanish headers plus stable geometry; do not infer phase from elapsed
+time. Keep the existing side portrait coordinates where the fixture proves
+them. Require preview/lock-state evidence before considering a visually rich
+side slot eligible for hero matching.
+
+- [ ] **Step 4: Implement deliberate gallery calibration**
+
+`GalleryCalibrationEngine` accepts only spatially paired card portrait and
+exact verified canonical/title OCR. It returns proposals; persistence occurs
+only after repeated stable evidence or explicit confirmation. It never treats
+the whole center grid as selected picks. Store multiple templates per hero for
+skin/icon variants.
+
+- [ ] **Step 5: Implement loading-roster reconciliation**
+
+Analyze the top five ally and bottom five enemy cards. Combine exact localized
+title, portrait and player-name evidence; bind R-95 to ally card four. Return
+unresolved conflicts for review rather than overwriting manual evidence.
+
+- [ ] **Step 6: Run focused and full verification**
+
+```powershell
+.\gradlew.bat testDebugUnitTest --tests "*RankedVideoCalibrationTest" --no-daemon
+.\gradlew.bat testDebugUnitTest --tests "*RecognitionBootstrapTest" --no-daemon
+.\gradlew.bat testDebugUnitTest --rerun-tasks --no-daemon
+.\gradlew.bat assembleDebug --no-daemon
+```
+
+- [ ] **Step 7: Commit**
+
+```powershell
+git add app/src/main/kotlin/com/example/honorofkingsassistant app/src/test/java/com/example/honorofkingsassistant app/src/test/resources/ranked_mode docs/ranked_mode_calibration_2026-07-26.json
+git commit -m "feat(ranked): calibrate portraits and recognition bootstrap"
+```
+
 ### Task 4: Overlay Transparency, Scroll, and Gesture Isolation
 
 **Files:**
@@ -376,7 +453,9 @@ git commit -m "feat(match): add calibrated normal blind mode"
 
 **Interfaces:**
 - Consumes: `InputMode`, `MatchMode`, and `AssistantUiState`.
-- Produces: controls for input mode, match mode, stage, slot, pick state, `Escanear ahora`, and `Verificar equipos e ítems`.
+- Produces: controls for input mode, match mode, stage, slot, pick state,
+  `Escanear ahora`, `Verificar equipos e ítems`, and an in-overlay manual team
+  editor.
 
 - [ ] **Step 1: Extend failing overlay contracts**
 
@@ -391,6 +470,8 @@ AUTO_SCAN
 MANUAL
 NORMAL_BLIND
 RANKED_DRAFT
+Editar equipo
+Quitar héroe
 ```
 
 Also assert window dragging is installed on `dragHandle` and not on `ScrollView`.
@@ -426,6 +507,13 @@ Publish immutable preference changes through service intents; do not mutate `Ass
 The scoreboard action must use its own explicit in-game command; do not reuse
 the draft-only force-scan action. Keep normal-mode controls unavailable unless
 the calibrated Task 3 implementation and its review gate have passed.
+
+Add a manual editor inside the overlay instead of launching `MainActivity`.
+Expose the player plus four allied slots and, only for ranked, five enemy
+slots. Selecting a slot opens a role-filtered scrollable hero list whose labels
+include canonical name and verified Spanish title. A tap assigns/replaces the
+slot and returns to the compact summary; a separate action clears it. Do not
+require the keyboard, although canonical/title search may be offered.
 
 - [ ] **Step 5: Run contracts**
 
