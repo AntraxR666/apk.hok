@@ -161,4 +161,21 @@ class NormalModeRoutingTest {
         assertEquals(MatchMode.NORMAL_BLIND, mode.effective)
         assertTrue(snapshot.allConfirmedNames.isEmpty())
     }
+
+    @Test
+    fun frameTaggedBeforeConversionIsRejectedWhenGenerationAdvancesDuringConversion() {
+        val coordinator = DraftSessionCoordinator()
+        val frameGeneration = coordinator.beginFrame()
+        var resultApplied = false
+
+        coordinator.advanceGeneration {
+            // Simulates a manual/session reset while the raw frame is converting.
+        }
+        val acceptedAfterConversion = coordinator.runIfCurrent(frameGeneration) {
+            resultApplied = true
+        }
+
+        assertFalse(acceptedAfterConversion)
+        assertFalse(resultApplied)
+    }
 }

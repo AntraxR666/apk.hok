@@ -7,11 +7,18 @@ data class DraftSessionResetState(
     val playerSlot: PlayerSlotDetection?
 )
 
+data class DraftFrameGeneration internal constructor(
+    internal val value: Long
+)
+
 class DraftSessionCoordinator {
     private val lock = Any()
     private var generation = 0L
 
     fun captureGeneration(): Long = synchronized(lock) { generation }
+
+    fun beginFrame(): DraftFrameGeneration =
+        synchronized(lock) { DraftFrameGeneration(generation) }
 
     fun <T> advanceGeneration(action: () -> T): T = synchronized(lock) {
         generation++
@@ -27,6 +34,11 @@ class DraftSessionCoordinator {
                 true
             }
         }
+
+    fun runIfCurrent(
+        expectedGeneration: DraftFrameGeneration,
+        action: () -> Unit
+    ): Boolean = runIfCurrent(expectedGeneration.value, action)
 
     fun beginDraftSession(
         resetMatchMode: () -> MatchModeState,

@@ -425,6 +425,7 @@ class ScreenCaptureService : Service() {
     }
 
     private fun handleImage(image: Image?) {
+        val analysisGeneration = sessionCoordinator.beginFrame()
         if (image == null) return
         val policy = AssistantStagePolicy.forStage(selectedStage)
         if (!policy.shouldProcessFrames) {
@@ -453,7 +454,6 @@ class ScreenCaptureService : Service() {
             image.close()
         } ?: return
 
-        val analysisGeneration = sessionCoordinator.captureGeneration()
         val accepted = visionEngine.process(
             bitmap = bitmap,
             onResult = { result ->
