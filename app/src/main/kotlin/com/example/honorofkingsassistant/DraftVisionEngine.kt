@@ -22,7 +22,8 @@ class DraftVisionEngine(
     )
     private val catalog = CounterCatalog(heroes)
     private val matcher = HeroNameMatcher(heroes)
-    private val portraitMatcher = HeroPortraitMatcher(catalog, PortraitTemplateStore(context))
+    private val portraitTemplateStore = PortraitTemplateStore(context)
+    private val portraitMatcher = HeroPortraitMatcher(catalog, portraitTemplateStore)
     private val processing = AtomicBoolean(false)
     private val diagnosticsTracker = VisionDiagnosticsTracker()
     private val bitmapAnalyzer = DraftBitmapAnalyzer(enemyOnRight)
@@ -58,6 +59,8 @@ class DraftVisionEngine(
 
     fun learnPortrait(heroName: String, slot: SlotPortraitFingerprint): Boolean =
         portraitMatcher.learn(heroName, slot)
+
+    fun recognitionReadiness(): RecognitionReadiness = portraitTemplateStore.readiness()
 
     fun diagnostics(): VisionDiagnostics = diagnosticsTracker.snapshot()
 
@@ -107,12 +110,30 @@ class DraftVisionEngine(
                                 enemyOnRight = enemyOnRight
                             )
                         )
-                        val ocrCandidates = extractOcrCandidates(text)
+                        val modeVisuals = resolveModeVisuals(
+                            bitmap = bitmap,
+                            text = text,
+                            textLines = textLines,
+                            frameWidth = ocrBitmap.width,
+                            frameHeight = ocrBitmap.height,
+                            matchMode = matchMode
+                        )
+                        val ocrCandidates = if (
+                            matchMode.effective == MatchMode.RANKED_DRAFT
+                        ) {
+                            emptyList()
+                        } else {
+                            extractOcrCandidates(text)
+                        }
                         val slotFingerprints = runCatching {
                             when (matchMode.effective) {
                                 MatchMode.AUTO -> emptyList()
                                 MatchMode.RANKED_DRAFT ->
-                                    portraitMatcher.fingerprints(bitmap, enemyOnRight)
+                                    portraitMatcher.fingerprints(
+                                        bitmap,
+                                        enemyOnRight,
+                                        modeVisuals.board
+                                    )
                                 MatchMode.NORMAL_BLIND ->
                                     portraitMatcher.normalFingerprints(bitmap)
                             }
@@ -126,16 +147,24 @@ class DraftVisionEngine(
                                     ocrBitmap.height
                                 )
                             )
-                            MatchMode.RANKED_DRAFT -> portraitMatcher.match(slotFingerprints).map {
-                                PositionedHeroCandidate(
-                                    heroName = it.heroName,
-                                    confidence = it.confidence,
-                                    centerX = -1,
-                                    centerY = -1,
-                                    source = CandidateSource.PORTRAIT,
-                                    sideHint = it.side
-                                )
-                            }
+                            MatchMode.RANKED_DRAFT -> portraitMatcher
+                                .matchSlots(slotFingerprints)
+                                .map {
+                                    val slotStatus = when (it.side) {
+                                        TeamSide.ALLY -> modeVisuals.board.allySlots
+                                        TeamSide.ENEMY -> modeVisuals.board.enemySlots
+                                        TeamSide.UNKNOWN -> emptyList()
+                                    }.firstOrNull { slot -> slot.index == it.slotIndex }?.status
+                                    PositionedHeroCandidate(
+                                        heroName = it.heroName,
+                                        confidence = it.confidence,
+                                        centerX = -1,
+                                        centerY = -1,
+                                        source = CandidateSource.PORTRAIT,
+                                        sideHint = it.side,
+                                        rankedSlotStatus = slotStatus
+                                    )
+                                }
                         }
                         val observations = HeroCandidateRouter.route(
                             candidates = ocrCandidates + portraitCandidates,
@@ -144,7 +173,6 @@ class DraftVisionEngine(
                             frameHeight = ocrBitmap.height,
                             enemyOnRight = enemyOnRight
                         )
-                        val modeVisuals = resolveModeVisuals(bitmap, text, matchMode)
                         onResult(
                             DraftVisionResult(
                                 observations = observations,
@@ -165,6 +193,7 @@ class DraftVisionEngine(
                                     null
                                 },
                                 slotFingerprints = slotFingerprints,
+                                recognitionReadiness = portraitTemplateStore.readiness(),
                                 diagnostics = diagnostics
                             )
                         )
@@ -245,6 +274,9 @@ class DraftVisionEngine(
     private fun resolveModeVisuals(
         bitmap: Bitmap,
         text: Text,
+        textLines: List<PositionedTextLine>,
+        frameWidth: Int,
+        frameHeight: Int,
         matchMode: MatchModeState
     ): ModeVisuals = when (matchMode.effective) {
         MatchMode.AUTO -> ModeVisuals(
@@ -267,26 +299,31 @@ class DraftVisionEngine(
         }
         MatchMode.RANKED_DRAFT -> {
             val board = bitmapAnalyzer.analyze(bitmap, text.text)
+            val calibratedPhase = RankedPhaseDetector.detect(
+                lines = textLines,
+                frameWidth = frameWidth,
+                frameHeight = frameHeight
+            )
             ModeVisuals(
                 board = board,
-                subphase = DraftSubphaseDetector.detect(
-                    recognizedText = text.text,
-                    screenMode = board.mode,
-                    confirmedPickCount = board.totalConfirmedCount
-                )
+                subphase = when {
+                    board.mode == ScreenMode.IN_GAME -> DraftSubphase.IN_GAME
+                    calibratedPhase != DraftSubphase.UNKNOWN -> calibratedPhase
+                    else -> DraftSubphase.UNKNOWN
+                }
             )
         }
     }
 
     private fun detectPlayerSlot(text: Text, frameWidth: Int, frameHeight: Int): PlayerSlotDetection? {
-        val target = canonicalPlayerName(playerName)
+        val target = PlayerIdentityNormalizer.canonical(playerName)
         if (target.isBlank()) return null
         val allyPhysicalLeft = enemyOnRight
         return text.textBlocks.asSequence()
             .flatMap { it.lines.asSequence() }
             .mapNotNull { line ->
                 val box = line.boundingBox ?: return@mapNotNull null
-                val normalizedLine = canonicalPlayerName(line.text)
+                val normalizedLine = PlayerIdentityNormalizer.canonical(line.text)
                 if (normalizedLine != target) return@mapNotNull null
                 val side = classifier.classify(box.centerX(), frameWidth)
                 if (side != TeamSide.ALLY) return@mapNotNull null
@@ -301,9 +338,6 @@ class DraftVisionEngine(
             }
             .firstOrNull()
     }
-
-    private fun canonicalPlayerName(value: String): String = CounterCatalog.normalize(value)
-        .replace("[^a-z0-9]".toRegex(), "")
 
     override fun close() {
         recognizer.close()

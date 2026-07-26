@@ -128,7 +128,7 @@ class NormalSelectionIsolationTest {
     }
 
     @Test
-    fun rankedRouterKeepsExistingEnemyOnRightBehavior() {
+    fun rankedRouterRejectsOcrEvenWhenSideTextLooksLikeHeroIdentity() {
         val observations = HeroCandidateRouter.route(
             candidates = listOf(
                 ocrCandidate("Angela", 80, 120),
@@ -140,13 +140,7 @@ class NormalSelectionIsolationTest {
             enemyOnRight = true
         )
 
-        assertEquals(
-            listOf(
-                HeroObservation("Angela", TeamSide.ALLY, 0.94),
-                HeroObservation("Lam", TeamSide.ENEMY, 0.94)
-            ),
-            observations
-        )
+        assertTrue(observations.isEmpty())
     }
 
     private fun ocrCandidate(

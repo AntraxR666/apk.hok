@@ -9,6 +9,21 @@ data class SlotHeroMatch(
     val confidence: Double
 )
 
+object RankedPortraitEligibility {
+    fun eligible(
+        fingerprints: List<SlotPortraitFingerprint>,
+        board: DraftBoardState
+    ): List<SlotPortraitFingerprint> = fingerprints.filter { fingerprint ->
+        val slot = when (fingerprint.side) {
+            TeamSide.ALLY -> board.allySlots
+            TeamSide.ENEMY -> board.enemySlots
+            TeamSide.UNKNOWN -> emptyList()
+        }.firstOrNull { it.index == fingerprint.slotIndex }
+        slot?.status == DraftSlotStatus.PREVIEWING ||
+            slot?.status == DraftSlotStatus.CONFIRMED
+    }
+}
+
 class HeroPortraitMatcher(
     private val catalog: CounterCatalog,
     private val store: PortraitTemplateStore
@@ -37,6 +52,13 @@ class HeroPortraitMatcher(
         }
         return output
     }
+
+    fun fingerprints(
+        bitmap: Bitmap,
+        enemyOnRight: Boolean,
+        board: DraftBoardState
+    ): List<SlotPortraitFingerprint> =
+        RankedPortraitEligibility.eligible(fingerprints(bitmap, enemyOnRight), board)
 
     fun normalFingerprints(bitmap: Bitmap): List<SlotPortraitFingerprint> =
         NormalSelectionGeometry.forFrame(bitmap.width, bitmap.height)

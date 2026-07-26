@@ -95,6 +95,7 @@ object HoKGlobalLandscapeProfile {
     val leftPlayerColumn = NormalizedRect(0.052, 0.095, 0.225, 0.900)
     val rightPlayerColumn = NormalizedRect(0.775, 0.095, 0.952, 0.900)
     val centerSelectionRegion = NormalizedRect(0.255, 0.10, 0.745, 0.895)
+    val loadingVersusRegion = NormalizedRect(0.39, 0.45, 0.61, 0.58)
     val minimapRegion = NormalizedRect(0.0, 0.0, 0.215, 0.36)
     val abilityRegion = NormalizedRect(0.63, 0.48, 1.0, 1.0)
 
@@ -162,6 +163,52 @@ object HoKGlobalLandscapeProfile {
             ?.takeIf { it.second <= 0.050 }
             ?.first
     }
+}
+
+/**
+ * Ranked phase evidence from the exact Spanish header inside the calibrated title region.
+ *
+ * This deliberately ignores timers and confirmed-pick counts: neither is a phase identity.
+ */
+object RankedPhaseDetector {
+    fun detect(
+        lines: List<PositionedTextLine>,
+        frameWidth: Int,
+        frameHeight: Int
+    ): DraftSubphase {
+        if (frameWidth <= 0 || frameHeight <= 0) return DraftSubphase.UNKNOWN
+        val title = HoKGlobalLandscapeProfile.titleRegion.toPixelRect(frameWidth, frameHeight)
+        val normalizedHeaders = lines.asSequence()
+            .filter { line ->
+                line.centerX >= title.left &&
+                    line.centerX < title.right &&
+                    line.centerY >= title.top &&
+                    line.centerY < title.bottom
+            }
+            .map { normalizeHeroRecognitionText(it.text) }
+            .toSet()
+        val loadingVersus = HoKGlobalLandscapeProfile.loadingVersusRegion
+            .toPixelRect(frameWidth, frameHeight)
+        val hasLoadingVersus = lines.any { line ->
+            normalizeHeroRecognitionText(line.text) == "vs" &&
+                line.centerX >= loadingVersus.left &&
+                line.centerX < loadingVersus.right &&
+                line.centerY >= loadingVersus.top &&
+                line.centerY < loadingVersus.bottom
+        }
+        return when {
+            "fase de veto" in normalizedHeaders -> DraftSubphase.BAN
+            "elegir heroes" in normalizedHeaders -> DraftSubphase.PICK
+            "ultimos ajustes" in normalizedHeaders -> DraftSubphase.ADJUSTMENTS
+            hasLoadingVersus -> DraftSubphase.LOADING
+            else -> DraftSubphase.UNKNOWN
+        }
+    }
+}
+
+object PlayerIdentityNormalizer {
+    fun canonical(value: String): String = CounterCatalog.normalize(value)
+        .replace("[^a-z0-9]".toRegex(), "")
 }
 
 object DraftSlotClassifier {

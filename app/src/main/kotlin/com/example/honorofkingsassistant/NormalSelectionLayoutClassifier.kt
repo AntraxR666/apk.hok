@@ -11,7 +11,8 @@ data class PositionedHeroCandidate(
     val centerX: Int,
     val centerY: Int,
     val source: CandidateSource,
-    val sideHint: TeamSide = TeamSide.UNKNOWN
+    val sideHint: TeamSide = TeamSide.UNKNOWN,
+    val rankedSlotStatus: DraftSlotStatus? = null
 )
 
 data class SlottedHeroCandidate(
@@ -71,6 +72,7 @@ class NormalSelectionLayoutClassifier private constructor(
 }
 
 object HeroCandidateRouter {
+    @Suppress("UNUSED_PARAMETER")
     fun route(
         candidates: List<PositionedHeroCandidate>,
         matchMode: MatchModeState,
@@ -93,13 +95,19 @@ object HeroCandidateRouter {
                 }
             }
             MatchMode.RANKED_DRAFT -> {
-                val classifier = DraftLayoutClassifier(enemyOnRight)
-                candidates.map { candidate ->
-                    val side = when (candidate.source) {
-                        CandidateSource.OCR -> classifier.classify(candidate.centerX, frameWidth)
-                        CandidateSource.PORTRAIT -> candidate.sideHint
+                candidates.mapNotNull { candidate ->
+                    if (candidate.source != CandidateSource.PORTRAIT) return@mapNotNull null
+                    if (candidate.sideHint == TeamSide.UNKNOWN) return@mapNotNull null
+                    if (candidate.rankedSlotStatus != DraftSlotStatus.PREVIEWING &&
+                        candidate.rankedSlotStatus != DraftSlotStatus.CONFIRMED
+                    ) {
+                        return@mapNotNull null
                     }
-                    HeroObservation(candidate.heroName, side, candidate.confidence)
+                    HeroObservation(
+                        candidate.heroName,
+                        candidate.sideHint,
+                        candidate.confidence
+                    )
                 }
             }
         }
