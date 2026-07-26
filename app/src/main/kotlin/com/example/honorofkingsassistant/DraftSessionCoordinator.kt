@@ -11,6 +11,20 @@ data class DraftFrameGeneration internal constructor(
     internal val value: Long
 )
 
+internal data class PreparedDraftFrame<T : Any>(
+    val generation: DraftFrameGeneration,
+    val value: T
+)
+
+internal fun <T : Any> prepareFrameAtCurrentGeneration(
+    coordinator: DraftSessionCoordinator,
+    preAnalysis: () -> T?
+): PreparedDraftFrame<T>? {
+    val generation = coordinator.beginFrame()
+    val value = preAnalysis() ?: return null
+    return PreparedDraftFrame(generation, value)
+}
+
 class DraftSessionCoordinator {
     private val lock = Any()
     private var generation = 0L

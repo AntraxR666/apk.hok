@@ -425,34 +425,36 @@ class ScreenCaptureService : Service() {
     }
 
     private fun handleImage(image: Image?) {
-        val analysisGeneration = sessionCoordinator.beginFrame()
-        if (image == null) return
-        val policy = AssistantStagePolicy.forStage(selectedStage)
-        if (!policy.shouldProcessFrames) {
-            image.close()
-            return
-        }
+        val preparedFrame = prepareFrameAtCurrentGeneration(sessionCoordinator) {
+            if (image == null) return@prepareFrameAtCurrentGeneration null
+            val policy = AssistantStagePolicy.forStage(selectedStage)
+            if (!policy.shouldProcessFrames) {
+                image.close()
+                return@prepareFrameAtCurrentGeneration null
+            }
 
-        val now = SystemClock.elapsedRealtime()
-        val effectiveIntervalMs = AdaptiveFrameCadence.interval(
-            baseIntervalMs = policy.frameIntervalMs,
-            averageLatencyMs = visionEngine.diagnostics().averageLatencyMs
-        )
-        if (!forceNextFrame && now - lastFrameAt < effectiveIntervalMs) {
-            image.close()
-            return
-        }
-        forceNextFrame = false
-        lastFrameAt = now
+            val now = SystemClock.elapsedRealtime()
+            val effectiveIntervalMs = AdaptiveFrameCadence.interval(
+                baseIntervalMs = policy.frameIntervalMs,
+                averageLatencyMs = visionEngine.diagnostics().averageLatencyMs
+            )
+            if (!forceNextFrame && now - lastFrameAt < effectiveIntervalMs) {
+                image.close()
+                return@prepareFrameAtCurrentGeneration null
+            }
+            forceNextFrame = false
+            lastFrameAt = now
 
-        val bitmap = try {
-            imageToBitmap(image)
-        } catch (error: Exception) {
-            Log.w(TAG, "No se pudo convertir el frame", error)
-            null
-        } finally {
-            image.close()
+            try {
+                imageToBitmap(image)
+            } catch (error: Exception) {
+                Log.w(TAG, "No se pudo convertir el frame", error)
+                null
+            } finally {
+                image.close()
+            }
         } ?: return
+        val bitmap = preparedFrame.value
 
         val accepted = visionEngine.process(
             bitmap = bitmap,
@@ -526,7 +528,7 @@ class ScreenCaptureService : Service() {
                 publishCurrent("OCR temporalmente sin resultado")
             },
             runIfCurrent = { action ->
-                sessionCoordinator.runIfCurrent(analysisGeneration, action)
+                sessionCoordinator.runIfCurrent(preparedFrame.generation, action)
             }
         )
         if (!accepted) {

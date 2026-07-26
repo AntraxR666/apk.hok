@@ -165,13 +165,15 @@ class NormalModeRoutingTest {
     @Test
     fun frameTaggedBeforeConversionIsRejectedWhenGenerationAdvancesDuringConversion() {
         val coordinator = DraftSessionCoordinator()
-        val frameGeneration = coordinator.beginFrame()
         var resultApplied = false
 
-        coordinator.advanceGeneration {
-            // Simulates a manual/session reset while the raw frame is converting.
-        }
-        val acceptedAfterConversion = coordinator.runIfCurrent(frameGeneration) {
+        val preparedFrame = prepareFrameAtCurrentGeneration(coordinator) {
+            coordinator.advanceGeneration {
+                // Simulates a manual/session reset while the raw frame is converting.
+            }
+            "converted bitmap"
+        }!!
+        val acceptedAfterConversion = coordinator.runIfCurrent(preparedFrame.generation) {
             resultApplied = true
         }
 
