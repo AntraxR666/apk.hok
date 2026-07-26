@@ -59,7 +59,7 @@ require('minifyEnabled true' in build, 'Release debe usar R8')
 require('shrinkResources true' in build, 'Release debe reducir recursos')
 require('compileSdk 36' in build, 'V5 debe compilar con API 36')
 require('targetSdk 36' in build, 'V5 debe orientarse a API 36')
-require('versionName "5.0-personal-jkm-lx3-rc1"' in build, 'Version V5 personal incorrecta')
+require('versionName "1.0.0-personal-jkm-lx3-rc1"' in build, 'Version 1.0 personal incorrecta')
 
 kotlin_root = ROOT / 'app/src/main/kotlin/com/example/honorofkingsassistant'
 required_sources = [

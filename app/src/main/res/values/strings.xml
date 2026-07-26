@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">HoK Draft Assistant V5 Personal</string>
-    <string name="main_title_v4">Asistente personal optimizado V5</string>
+    <string name="app_name">HoK Draft Assistant 1.0 Personal</string>
+    <string name="main_title_v4">Asistente personal optimizado 1.0</string>
     <string name="main_subtitle_v4">Analiza el draft localmente con captura acotada, OCR optimizado, confirmación temporal y controles manuales seguros.</string>
     <string name="role_to_play">Rol que vas a jugar</string>
     <string name="role_auto">Automático / cualquiera</string>
@@ -27,7 +27,7 @@
     <string name="counter_result_format">%1$d. %2$s\n%3$s</string>
     <string name="overlay_channel_name">Asistente flotante</string>
     <string name="overlay_notification_title">HoK Draft Assistant activo</string>
-    <string name="overlay_notification_text_v4">Burbuja V5 y recomendaciones locales en tiempo real</string>
+    <string name="overlay_notification_text_v4">Burbuja 1.0 y recomendaciones locales en tiempo real</string>
     <string name="capture_channel_name">Análisis local del draft</string>
     <string name="capture_notification_title">Analizando la selección de héroes</string>
     <string name="vision_diagnostics">Visión: %1$d ms prom. · %2$s→%3$s · %4$d procesados · %5$d descartados</string>

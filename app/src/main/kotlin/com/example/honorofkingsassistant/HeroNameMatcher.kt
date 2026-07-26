@@ -79,7 +79,9 @@ class HeroNameMatcher(
         .toList()
 
     private fun List<Candidate>.toExactMap(): Map<String, Candidate> = buildMap {
-        this@toExactMap.forEach { candidate -> putIfAbsent(candidate.normalized, candidate) }
+        this@toExactMap.forEach { candidate ->
+            if (!containsKey(candidate.normalized)) this[candidate.normalized] = candidate
+        }
     }
 
     private fun Candidate.toMatch(kind: MatchKind, score: Double) =

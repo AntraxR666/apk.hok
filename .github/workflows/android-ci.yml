@@ -61,6 +61,12 @@ jobs:
           python3 tools/test_v5_huawei_profile_contract.py
           python3 tools/test_media_projection_nullability_contract.py
           python3 tools/test_v5_offline_manifest_contract.py
+          python3 tools/test_spanish_alias_catalog.py
+          python3 tools/test_overlay_v55_contract.py
+          python3 tools/test_scoreboard_scan_contract.py
+          python3 tools/test_item_catalog.py
+          python3 tools/test_min_sdk_compat.py
+          python3 tools/test_v1_delivery_contract.py
           python3 tools/validate_v5.py
 
       - name: Unit tests, lint and APK
@@ -74,6 +80,7 @@ jobs:
           unzip -l "$APK" | grep -q 'AndroidManifest.xml'
           unzip -l "$APK" | grep -q 'classes.dex'
           unzip -l "$APK" | grep -q 'assets/hok_counters.json'
+          unzip -l "$APK" | grep -q 'assets/hok_items.json'
           AAPT="$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt"
           test -x "$AAPT"
           "$AAPT" dump badging "$APK" | tee app-debug.badging.txt
@@ -85,15 +92,15 @@ jobs:
             echo "Unexpected ACCESS_NETWORK_STATE permission in final APK" >&2
             exit 1
           fi
-          grep -q "versionCode='11'" app-debug.badging.txt
-          grep -q "versionName='5.0-personal-jkm-lx3-rc1'" app-debug.badging.txt
+          grep -q "versionCode='12'" app-debug.badging.txt
+          grep -q "versionName='1.0.0-personal-jkm-lx3-rc1'" app-debug.badging.txt
           sha256sum "$APK" | tee app-debug.apk.sha256
 
       - name: Upload APK and reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: HoK-Draft-Assistant-V5-Huawei-JKM-LX3
+          name: HoK-Draft-Assistant-1.0-Personal-JKM-LX3
           if-no-files-found: warn
           retention-days: 14
           path: |

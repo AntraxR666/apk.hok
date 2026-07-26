@@ -39,7 +39,9 @@ class GalleryCalibrationEngine(
                 .plus(hero.identityAliases.displayTitles.asSequence())
                 .map(::normalizeHeroRecognitionText)
                 .filter(String::isNotBlank)
-                .forEach { title -> putIfAbsent(title, hero) }
+                .forEach { title ->
+                    if (!containsKey(title)) this[title] = hero
+                }
         }
     }
     private val stableCounts = linkedMapOf<String, Int>()
@@ -64,7 +66,9 @@ class GalleryCalibrationEngine(
                 ?: return@forEach
             val stabilityKey =
                 CounterCatalog.normalize(hero.name) + ":" + portrait.fingerprint.encode()
-            candidatesThisFrame.putIfAbsent(stabilityKey, hero to portrait.fingerprint)
+            if (!candidatesThisFrame.containsKey(stabilityKey)) {
+                candidatesThisFrame[stabilityKey] = hero to portrait.fingerprint
+            }
         }
 
         val nextStableCounts = linkedMapOf<String, Int>()

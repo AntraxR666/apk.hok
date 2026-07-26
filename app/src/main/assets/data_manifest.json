@@ -26,6 +26,7 @@
       "purpose": "Offline item identifiers, English source names, costs and recommendation tags",
       "snapshot_asset": "hok_items.json",
       "source_url": "https://hokmeta.com/api/items.json",
+      "sha256": "753B2368437937CAD2EADFA02FEB8802FCF0FFFABDAF126D4024FA5DCDE24612",
       "localization_note": "Item names remain in the verified source language until Spanish in-game labels are captured; recommendations never invent localized item names."
     }
   ],

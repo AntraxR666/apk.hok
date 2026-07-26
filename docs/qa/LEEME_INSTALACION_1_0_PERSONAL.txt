@@ -1,0 +1,11 @@
+HoK Draft Assistant 1.0 Personal - Huawei JKM-LX3
+
+1. Copia el APK al telefono como documento, por USB o WhatsApp.
+2. Abre el APK desde Archivos/Descargas y permite instalar desde esa aplicacion.
+3. Al abrirlo, concede Mostrar sobre otras aplicaciones y despues acepta la captura de pantalla.
+4. En EMUI 9.1 configura Inicio de aplicaciones en manual y permite inicio automatico,
+   inicio secundario y ejecucion en segundo plano.
+5. Prueba primero una partida normal o practica. La confirmacion fisica en el JKM-LX3
+   sigue siendo necesaria antes de declarar la candidata final.
+
+El APK no solicita INTERNET ni ACCESS_NETWORK_STATE.

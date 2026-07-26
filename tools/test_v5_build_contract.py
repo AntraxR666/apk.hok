@@ -12,12 +12,12 @@ expected = {
     "Kotlin 1.9.24": "version '1.9.24'" in root_gradle,
     "compileSdk 36": "compileSdk 36" in app_gradle,
     "targetSdk 36": "targetSdk 36" in app_gradle,
-    "versionCode 11": "versionCode 11" in app_gradle,
-    "V5 versionName": 'versionName "5.0-personal-jkm-lx3-rc1"' in app_gradle,
+    "versionCode 12": "versionCode 12" in app_gradle,
+    "1.0 versionName": 'versionName "1.0.0-personal-jkm-lx3-rc1"' in app_gradle,
     "Gradle 8.11.1": "gradle-8.11.1-bin.zip" in wrapper,
     "CI API 36": 'platforms;android-36' in workflow,
     "CI Build Tools 35": 'build-tools;35.0.0' in workflow,
-    "V5 artifact": 'HoK-Draft-Assistant-V5-Huawei-JKM-LX3' in workflow,
+    "1.0 artifact": 'HoK-Draft-Assistant-1.0-Personal-JKM-LX3' in workflow,
     "INTERNET removed from merged manifest": 'android.permission.INTERNET" tools:node="remove"' in manifest,
 }
 

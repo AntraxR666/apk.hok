@@ -66,7 +66,9 @@ class RankedLoadingRosterEvidenceExtractor(
                 .plus(hero.identityAliases.displayTitles.asSequence())
                 .map(::normalizeHeroRecognitionText)
                 .filter(String::isNotBlank)
-                .forEach { title -> putIfAbsent(title, hero) }
+                .forEach { title ->
+                    if (!containsKey(title)) this[title] = hero
+                }
         }
     }
 
