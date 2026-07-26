@@ -212,46 +212,105 @@ git commit -m "feat(ocr): prefer exact aliases and log unknown titles"
 - Create: `app/src/main/kotlin/com/example/honorofkingsassistant/MatchMode.kt`
 - Create: `app/src/main/kotlin/com/example/honorofkingsassistant/NormalSelectionGeometry.kt`
 - Create: `app/src/main/kotlin/com/example/honorofkingsassistant/MatchModeResolver.kt`
+- Create: `app/src/main/kotlin/com/example/honorofkingsassistant/NormalSelectionLayoutClassifier.kt`
 - Modify: `app/src/main/kotlin/com/example/honorofkingsassistant/AssistantPreferences.kt`
 - Modify: `app/src/main/kotlin/com/example/honorofkingsassistant/AssistantSessionBus.kt`
+- Modify: `app/src/main/kotlin/com/example/honorofkingsassistant/DraftVisionEngine.kt`
+- Modify: `app/src/main/kotlin/com/example/honorofkingsassistant/DraftFlowResolver.kt`
+- Modify: `app/src/main/kotlin/com/example/honorofkingsassistant/ScreenCaptureService.kt`
+- Create: `app/src/test/resources/normal_mode/selection_early.png`
+- Create: `app/src/test/resources/normal_mode/selection_populated.png`
+- Create: `app/src/test/resources/normal_mode/loading.png`
+- Create: `docs/normal_mode_calibration_2026-07-26.json`
 - Create: `app/src/test/java/com/example/honorofkingsassistant/MatchModeResolverTest.kt`
+- Create: `app/src/test/java/com/example/honorofkingsassistant/NormalSelectionIsolationTest.kt`
 
 **Interfaces:**
-- Consumes: layout evidence from `DraftLayoutClassifier`.
-- Produces: `MatchMode { AUTO, RANKED_DRAFT, NORMAL_BLIND }`, `NormalSelectionGeometry.forFrame(width, height)`, and `MatchModeResolver.observe(evidence): MatchModeSuggestion`.
+- Consumes: positioned OCR candidates before ranked side classification.
+- Produces: `InputMode { AUTO_SCAN, MANUAL }`, `MatchMode { AUTO, RANKED_DRAFT, NORMAL_BLIND }`, `MatchModeState(preference, detected, effective)`, `NormalSelectionGeometry.forFrame(width, height)`, five normal ally rows, and `MatchModeResolver.observe(evidence): MatchModeState`.
 
-- [ ] **Step 1: Write failing geometry and resolver tests**
+- [ ] **Step 1: Add reproducible normal-mode fixtures**
+
+From the user-provided recording `https://www.youtube.com/watch?v=t83Wka385_Q`,
+extract only the game viewport at `00:45`, `01:00`, and `02:10`. Store the
+three compressed PNG fixtures and a JSON manifest containing source URL,
+timestamp, source viewport dimensions, crop rectangle, SHA-256, and measured
+normalized envelopes. The fixtures are test evidence only and are not packaged
+into the APK.
+
+- [ ] **Step 2: Write failing geometry and resolver tests**
 
 ```kotlin
 @Test
-fun jkmFrameUsesVerifiedNormalSelectionEnvelopes() {
+fun jkmAndCaptureFramesUseVerifiedNormalSelectionEnvelopes() {
     val geometry = NormalSelectionGeometry.forFrame(2340, 1080)
-    assertEquals(Rect(1778, 43, 2270, 950), geometry.alliedColumn)
-    assertEquals(Rect(1872, 842, 2293, 1058), geometry.confirmAction)
+    assertEquals(PixelRect(1778, 43, 2270, 950), geometry.alliedColumn)
+    assertEquals(PixelRect(1872, 842, 2293, 1058), geometry.confirmAction)
+    assertEquals(5, geometry.allyRows.size)
+    assertTrue(geometry.allyRows.zipWithNext().all { (a, b) -> a.bottom <= b.top })
+    assertEquals(5, NormalSelectionGeometry.forFrame(1170, 540).allyRows.size)
 }
 
 @Test
 fun normalRequiresThreeConsistentFrames() {
     val resolver = MatchModeResolver(requiredFrames = 3)
-    repeat(2) { assertEquals(MatchMode.AUTO, resolver.observe(normalEvidence).mode) }
-    assertEquals(MatchMode.NORMAL_BLIND, resolver.observe(normalEvidence).mode)
+    repeat(2) { assertEquals(MatchMode.AUTO, resolver.observe(normalEvidence).effective) }
+    assertEquals(MatchMode.NORMAL_BLIND, resolver.observe(normalEvidence).effective)
 }
 
 @Test
 fun rankedBanEvidencePreventsNormalClassification() {
     val resolver = MatchModeResolver(requiredFrames = 3)
     repeat(3) { resolver.observe(normalEvidence.copy(rankedBanLayoutVisible = true)) }
-    assertNotEquals(MatchMode.NORMAL_BLIND, resolver.current().mode)
+    assertNotEquals(MatchMode.NORMAL_BLIND, resolver.current().effective)
+}
+
+@Test
+fun manualPreferenceAlwaysWins() {
+    val state = MatchModeState(
+        preference = MatchMode.RANKED_DRAFT,
+        detected = MatchMode.NORMAL_BLIND
+    )
+    assertEquals(MatchMode.RANKED_DRAFT, state.effective)
 }
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [ ] **Step 3: Write failing observation-isolation tests**
 
-Run: `.\gradlew.bat testDebugUnitTest --tests "*MatchModeResolverTest" --no-daemon`
+```kotlin
+@Test
+fun normalCatalogAndCenterCandidatesAreDiscarded() {
+    assertNull(classifier.classify(catalogCandidate))
+    assertNull(classifier.classify(selectedHeroCandidate))
+}
+
+@Test
+fun normalAllyRowThreeMapsOnlyToAllySlotThree() {
+    val classified = classifier.classify(rowThreeCandidate)
+    assertEquals(TeamSide.ALLY, classified?.side)
+    assertEquals(3, classified?.slotIndex)
+}
+
+@Test
+fun normalSelectionCanNeverProduceEnemyObservation() {
+    assertTrue(allFixtureCandidates.mapNotNull(classifier::classify).none {
+        it.side == TeamSide.ENEMY
+    })
+}
+```
+
+- [ ] **Step 4: Run and verify failure**
+
+Run:
+
+```powershell
+.\gradlew.bat testDebugUnitTest --tests "*MatchModeResolverTest" --no-daemon
+.\gradlew.bat testDebugUnitTest --tests "*NormalSelectionIsolationTest" --no-daemon
+```
 
 Expected: FAIL because the match-mode types do not exist.
 
-- [ ] **Step 3: Implement normalized geometry**
+- [ ] **Step 5: Implement normalized geometry**
 
 Use the calibrated envelopes:
 
@@ -262,27 +321,47 @@ val alliedColumn = normalizedRect(0.76, 0.04, 0.97, 0.88)
 val confirmAction = normalizedRect(0.80, 0.78, 0.98, 0.98)
 ```
 
-Round left/top down and right/bottom up, then clamp to frame bounds.
+Reuse the existing `NormalizedRect.toPixelRect` nearest-integer behavior and
+`PixelRect` type, then clamp to frame bounds. Derive five non-overlapping
+`allyRows` from measured fixture row centers rather than splitting the entire
+column blindly.
 
-- [ ] **Step 4: Implement conservative temporal classification**
+- [ ] **Step 6: Implement preference/effective mode and conservative detection**
 
 Require allied-column evidence, selected-hero evidence, no enemy-pick column, and no ranked-ban strip for three frames. Manual preference always overrides the suggestion.
 
-- [ ] **Step 5: Run tests**
+- [ ] **Step 7: Route normal candidates before ranked tracking**
+
+Preserve OCR center coordinates in an internal `PositionedHeroCandidate`.
+For `RANKED_DRAFT`, keep the existing side/portrait/board path. For
+`NORMAL_BLIND`, accept only candidates inside one of the five measured ally
+rows, disable ranked portrait regions, publish no enemy observations, and
+bypass ranked 10/10 completion logic. For unresolved `AUTO`, publish no hero
+observations until three-frame evidence is decisive.
+
+- [ ] **Step 8: Persist controls and service actions**
+
+Add typed input-mode and match-mode keys to `AssistantPreferences`, fields to
+`AssistantUiState`, and `ACTION_SET_INPUT_MODE` / `ACTION_SET_MATCH_MODE` to
+`ScreenCaptureService`. Manual choices survive contradictory detection until
+the session is reset.
+
+- [ ] **Step 9: Run tests**
 
 Run:
 
 ```powershell
 .\gradlew.bat testDebugUnitTest --tests "*MatchModeResolverTest" --no-daemon
+.\gradlew.bat testDebugUnitTest --tests "*NormalSelectionIsolationTest" --no-daemon
 .\gradlew.bat testDebugUnitTest --tests "*VideoCalibrationTest" --no-daemon
 ```
 
 Expected: all PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 10: Commit**
 
 ```powershell
-git add app/src/main/kotlin/com/example/honorofkingsassistant/MatchMode.kt app/src/main/kotlin/com/example/honorofkingsassistant/NormalSelectionGeometry.kt app/src/main/kotlin/com/example/honorofkingsassistant/MatchModeResolver.kt app/src/main/kotlin/com/example/honorofkingsassistant/AssistantPreferences.kt app/src/main/kotlin/com/example/honorofkingsassistant/AssistantSessionBus.kt app/src/test/java/com/example/honorofkingsassistant/MatchModeResolverTest.kt
+git add app/src/main/kotlin/com/example/honorofkingsassistant app/src/test/java/com/example/honorofkingsassistant/MatchModeResolverTest.kt app/src/test/java/com/example/honorofkingsassistant/NormalSelectionIsolationTest.kt app/src/test/resources/normal_mode docs/normal_mode_calibration_2026-07-26.json
 git commit -m "feat(match): add calibrated normal blind mode"
 ```
 
