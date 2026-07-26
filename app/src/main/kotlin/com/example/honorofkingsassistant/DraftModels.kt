@@ -6,10 +6,17 @@ enum class TeamSide {
     UNKNOWN
 }
 
+enum class MatchKind {
+    EXACT_CANONICAL,
+    EXACT_ALIAS,
+    FUZZY
+}
+
 data class HeroNameMatch(
     val hero: Hero,
     val score: Double,
-    val matchedText: String
+    val matchedText: String,
+    val kind: MatchKind
 )
 
 data class HeroObservation(

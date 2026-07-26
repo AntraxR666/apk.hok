@@ -8,22 +8,38 @@ class HeroNameMatcher(
 ) {
     private data class Candidate(val hero: Hero, val label: String, val normalized: String)
 
-    private val candidates: List<Candidate> = heroes.flatMap { hero ->
-        (listOf(hero.name, hero.id) + hero.aliases)
-            .filter { it.isNotBlank() }
-            .distinct()
-            .map { Candidate(hero, it, CounterCatalog.normalize(it)) }
+    private val canonicalCandidates = heroes.flatMap { hero ->
+        listOf(hero.name, hero.id).toCandidates(hero)
     }
+    private val aliasCandidates = heroes.flatMap { hero ->
+        hero.allRecognitionAliases().toCandidates(hero)
+    }
+    private val candidates = canonicalCandidates + aliasCandidates
+    private val exactCanonical = canonicalCandidates.toExactMap()
+    private val exactAliases = aliasCandidates.toExactMap()
 
-    fun bestMatch(rawText: String): HeroNameMatch? {
-        val normalizedInput = CounterCatalog.normalize(rawText)
+    fun match(rawText: String): HeroNameMatch? {
+        val normalizedInput = normalizeHeroRecognitionText(rawText)
         if (normalizedInput.isBlank()) return null
 
+        exactCanonical[normalizedInput]?.let { candidate ->
+            return candidate.toMatch(MatchKind.EXACT_CANONICAL, 1.0)
+        }
+        exactAliases[normalizedInput]?.let { candidate ->
+            return candidate.toMatch(MatchKind.EXACT_ALIAS, 1.0)
+        }
+        if (' ' !in normalizedInput && normalizedInput.length < MIN_FUZZY_FRAGMENT_LENGTH) {
+            return null
+        }
+
         val fragments = buildFragments(normalizedInput)
+            .filter { ' ' in it || it.length >= MIN_FUZZY_FRAGMENT_LENGTH }
+        if (fragments.isEmpty()) return null
+
         return candidates.asSequence()
             .map { candidate ->
                 val score = fragments.maxOf { fragment -> similarity(fragment, candidate.normalized) }
-                HeroNameMatch(candidate.hero, score, candidate.label)
+                candidate.toMatch(MatchKind.FUZZY, score)
             }
             .filter { it.score >= minimumScore }
             .sortedWith(
@@ -33,6 +49,8 @@ class HeroNameMatcher(
             )
             .firstOrNull()
     }
+
+    fun bestMatch(rawText: String): HeroNameMatch? = match(rawText)
 
     fun findMatches(rawText: String): List<HeroNameMatch> {
         val lines = rawText.lines().map { it.trim() }.filter { it.isNotBlank() }
@@ -52,6 +70,20 @@ class HeroNameMatcher(
         }
         return fragments.toList()
     }
+
+    private fun List<String>.toCandidates(hero: Hero): List<Candidate> = asSequence()
+        .filter { it.isNotBlank() }
+        .distinct()
+        .map { Candidate(hero, it, normalizeHeroRecognitionText(it)) }
+        .filter { it.normalized.isNotBlank() }
+        .toList()
+
+    private fun List<Candidate>.toExactMap(): Map<String, Candidate> = buildMap {
+        this@toExactMap.forEach { candidate -> putIfAbsent(candidate.normalized, candidate) }
+    }
+
+    private fun Candidate.toMatch(kind: MatchKind, score: Double) =
+        HeroNameMatch(hero, score, label, kind)
 
     private fun similarity(left: String, right: String): Double {
         if (left == right) return 1.0
@@ -79,4 +111,14 @@ class HeroNameMatcher(
         }
         return previous[right.length]
     }
+
+    private companion object {
+        const val MIN_FUZZY_FRAGMENT_LENGTH = 5
+    }
 }
+
+internal fun normalizeHeroRecognitionText(value: String): String =
+    CounterCatalog.normalize(value)
+        .replace("[^a-z0-9]+".toRegex(), " ")
+        .trim()
+        .replace("\\s+".toRegex(), " ")

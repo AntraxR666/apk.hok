@@ -150,7 +150,7 @@ class DraftVisionEngine(
         for (block in text.textBlocks) {
             for (line in block.lines) {
                 val box = line.boundingBox ?: continue
-                val match = matcher.bestMatch(line.text) ?: continue
+                val match = matcher.match(line.text) ?: continue
                 val side = classifier.classify(box.centerX(), frameWidth)
                 val observation = HeroObservation(
                     heroName = match.hero.name,
