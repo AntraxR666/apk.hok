@@ -307,7 +307,7 @@ object RankedLoadingSessionStateRouter {
         configuredPlayerName: String,
         preserved: List<PreservedRosterIdentity> = emptyList()
     ): AssistantUiState {
-        if (result.matchMode.effective != MatchMode.RANKED_DRAFT ||
+        if (result.matchMode.effective == MatchMode.AUTO ||
             result.subphase != DraftSubphase.LOADING
         ) {
             return state

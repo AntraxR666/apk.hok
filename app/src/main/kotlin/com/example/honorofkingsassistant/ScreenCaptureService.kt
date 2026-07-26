@@ -520,7 +520,7 @@ class ScreenCaptureService : Service() {
                         lastSlotFingerprints = emptyList()
                     }
                 }
-                if (matchMode.effective == MatchMode.RANKED_DRAFT &&
+                if (matchMode.effective != MatchMode.AUTO &&
                     result.subphase == DraftSubphase.LOADING
                 ) {
                     val preservedManual = ManualRosterAuthority.preservedIdentities(

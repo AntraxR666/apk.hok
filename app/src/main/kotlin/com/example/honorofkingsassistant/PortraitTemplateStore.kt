@@ -14,16 +14,48 @@ enum class PortraitTemplateDomain {
     LOADING_CARD_PORTRAIT
 }
 
+enum class PortraitFingerprintLayout {
+    NONE,
+    RANKED_SIDE_PORTRAITS,
+    NORMAL_ALLY_PORTRAITS,
+    LOADING_CARDS
+}
+
+data class PortraitRecognitionFramePlan(
+    val fingerprintLayout: PortraitFingerprintLayout,
+    val templateDomain: PortraitTemplateDomain
+)
+
+object PortraitRecognitionFramePolicy {
+    fun forFrame(
+        matchMode: MatchMode,
+        subphase: DraftSubphase
+    ): PortraitRecognitionFramePlan = when {
+        matchMode == MatchMode.AUTO -> PortraitRecognitionFramePlan(
+            fingerprintLayout = PortraitFingerprintLayout.NONE,
+            templateDomain = PortraitTemplateDomain.DRAFT_PORTRAIT
+        )
+        subphase == DraftSubphase.LOADING -> PortraitRecognitionFramePlan(
+            fingerprintLayout = PortraitFingerprintLayout.LOADING_CARDS,
+            templateDomain = PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+        )
+        matchMode == MatchMode.RANKED_DRAFT -> PortraitRecognitionFramePlan(
+            fingerprintLayout = PortraitFingerprintLayout.RANKED_SIDE_PORTRAITS,
+            templateDomain = PortraitTemplateDomain.DRAFT_PORTRAIT
+        )
+        else -> PortraitRecognitionFramePlan(
+            fingerprintLayout = PortraitFingerprintLayout.NORMAL_ALLY_PORTRAITS,
+            templateDomain = PortraitTemplateDomain.DRAFT_PORTRAIT
+        )
+    }
+}
+
 object PortraitTemplateDomainPolicy {
     fun forFrame(
         matchMode: MatchMode,
         subphase: DraftSubphase
     ): PortraitTemplateDomain =
-        if (matchMode == MatchMode.RANKED_DRAFT && subphase == DraftSubphase.LOADING) {
-            PortraitTemplateDomain.LOADING_CARD_PORTRAIT
-        } else {
-            PortraitTemplateDomain.DRAFT_PORTRAIT
-        }
+        PortraitRecognitionFramePolicy.forFrame(matchMode, subphase).templateDomain
 }
 
 data class RecognitionCalibrationState(

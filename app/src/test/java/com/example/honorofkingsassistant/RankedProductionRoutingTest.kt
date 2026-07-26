@@ -221,28 +221,81 @@ class RankedProductionRoutingTest {
     }
 
     @Test
-    fun loadingUsesOnlyLoadingCardPortraitTemplates() {
+    fun confirmedLoadingUsesLoadingCardRoisAndTemplatesForRankedAndNormalModes() {
         assertEquals(
-            PortraitTemplateDomain.LOADING_CARD_PORTRAIT,
-            PortraitTemplateDomainPolicy.forFrame(
+            PortraitRecognitionFramePlan(
+                fingerprintLayout = PortraitFingerprintLayout.LOADING_CARDS,
+                templateDomain = PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+            ),
+            PortraitRecognitionFramePolicy.forFrame(
                 matchMode = MatchMode.RANKED_DRAFT,
                 subphase = DraftSubphase.LOADING
             )
         )
         assertEquals(
-            PortraitTemplateDomain.DRAFT_PORTRAIT,
-            PortraitTemplateDomainPolicy.forFrame(
+            PortraitRecognitionFramePlan(
+                fingerprintLayout = PortraitFingerprintLayout.RANKED_SIDE_PORTRAITS,
+                templateDomain = PortraitTemplateDomain.DRAFT_PORTRAIT
+            ),
+            PortraitRecognitionFramePolicy.forFrame(
                 matchMode = MatchMode.RANKED_DRAFT,
                 subphase = DraftSubphase.PICK
             )
         )
         assertEquals(
-            PortraitTemplateDomain.DRAFT_PORTRAIT,
-            PortraitTemplateDomainPolicy.forFrame(
+            PortraitRecognitionFramePlan(
+                fingerprintLayout = PortraitFingerprintLayout.LOADING_CARDS,
+                templateDomain = PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+            ),
+            PortraitRecognitionFramePolicy.forFrame(
                 matchMode = MatchMode.NORMAL_BLIND,
                 subphase = DraftSubphase.LOADING
             )
         )
+        assertEquals(
+            PortraitRecognitionFramePlan(
+                fingerprintLayout = PortraitFingerprintLayout.NORMAL_ALLY_PORTRAITS,
+                templateDomain = PortraitTemplateDomain.DRAFT_PORTRAIT
+            ),
+            PortraitRecognitionFramePolicy.forFrame(
+                matchMode = MatchMode.NORMAL_BLIND,
+                subphase = DraftSubphase.PICK
+            )
+        )
+    }
+
+    @Test
+    fun normalLoadingReconcilesConfirmedHeroesFromBothCardRows() {
+        val result = DraftVisionResult(
+            observations = emptyList(),
+            rawText = "VS",
+            board = DraftBoardState.empty(ScreenMode.UNKNOWN),
+            screenMode = ScreenMode.UNKNOWN,
+            matchMode = MatchModeState(detected = MatchMode.NORMAL_BLIND),
+            subphase = DraftSubphase.LOADING,
+            loadingRosterEvidence = listOf(
+                LoadingRosterCardEvidence(
+                    side = TeamSide.ALLY,
+                    slotIndex = 1,
+                    portraitHeroName = "Angela"
+                ),
+                LoadingRosterCardEvidence(
+                    side = TeamSide.ENEMY,
+                    slotIndex = 1,
+                    portraitHeroName = "Lam"
+                )
+            )
+        )
+
+        val state = RankedLoadingSessionStateRouter.route(
+            state = AssistantUiState(),
+            result = result,
+            configuredPlayerName = "R-95"
+        )
+
+        assertEquals(listOf("Angela"), state.snapshot.allies.map { it.heroName })
+        assertEquals(listOf("Lam"), state.snapshot.enemies.map { it.heroName })
+        assertEquals(2, state.loadingRosterReconciliation?.assignments?.size)
     }
 
     @Test

@@ -126,39 +126,41 @@ class DraftVisionEngine(
                             matchMode = matchMode
                         )
                         val ocrCandidates = if (
-                            matchMode.effective == MatchMode.RANKED_DRAFT
+                            matchMode.effective == MatchMode.RANKED_DRAFT ||
+                            modeVisuals.subphase == DraftSubphase.LOADING
                         ) {
                             emptyList()
                         } else {
                             extractOcrCandidates(text)
                         }
+                        val portraitPlan = PortraitRecognitionFramePolicy.forFrame(
+                            matchMode = matchMode.effective,
+                            subphase = modeVisuals.subphase
+                        )
                         val slotFingerprints = runCatching {
-                            when (matchMode.effective) {
-                                MatchMode.AUTO -> emptyList()
-                                MatchMode.RANKED_DRAFT -> if (
-                                    modeVisuals.subphase == DraftSubphase.LOADING
-                                ) {
+                            when (portraitPlan.fingerprintLayout) {
+                                PortraitFingerprintLayout.NONE -> emptyList()
+                                PortraitFingerprintLayout.LOADING_CARDS ->
                                     portraitMatcher.loadingFingerprints(bitmap)
-                                } else {
+                                PortraitFingerprintLayout.RANKED_SIDE_PORTRAITS ->
                                     portraitMatcher.fingerprints(
                                         bitmap,
                                         enemyOnRight,
                                         modeVisuals.board
                                     )
-                                }
-                                MatchMode.NORMAL_BLIND ->
+                                PortraitFingerprintLayout.NORMAL_ALLY_PORTRAITS ->
                                     portraitMatcher.normalFingerprints(bitmap)
                             }
                         }.getOrElse { emptyList() }
-                        val portraitTemplateDomain = PortraitTemplateDomainPolicy.forFrame(
-                            matchMode = matchMode.effective,
-                            subphase = modeVisuals.subphase
-                        )
                         val portraitMatches = portraitMatcher.matchSlots(
                             slotFingerprints,
-                            portraitTemplateDomain
+                            portraitPlan.templateDomain
                         )
-                        val portraitCandidates = when (matchMode.effective) {
+                        val portraitCandidates = if (
+                            modeVisuals.subphase == DraftSubphase.LOADING
+                        ) {
+                            emptyList()
+                        } else when (matchMode.effective) {
                             MatchMode.AUTO -> emptyList()
                             MatchMode.NORMAL_BLIND -> NormalPortraitCandidateFactory.create(
                                 matches = portraitMatches,
@@ -192,7 +194,7 @@ class DraftVisionEngine(
                             enemyOnRight = enemyOnRight
                         )
                         val loadingRosterEvidence = if (
-                            matchMode.effective == MatchMode.RANKED_DRAFT &&
+                            matchMode.effective != MatchMode.AUTO &&
                             modeVisuals.subphase == DraftSubphase.LOADING
                         ) {
                             loadingEvidenceExtractor.extract(
