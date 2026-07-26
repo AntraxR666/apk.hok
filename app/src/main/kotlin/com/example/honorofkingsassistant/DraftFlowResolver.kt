@@ -23,7 +23,68 @@ data class DraftFlowState(
  * The resolver does not assume that the user's physical side receives first pick.
  */
 object DraftFlowResolver {
-    fun resolve(board: DraftBoardState, playerSlot: PlayerSlotDetection?): DraftFlowState {
+    fun resolve(board: DraftBoardState, playerSlot: PlayerSlotDetection?): DraftFlowState =
+        resolveRanked(board, playerSlot)
+
+    fun resolve(
+        board: DraftBoardState,
+        playerSlot: PlayerSlotDetection?,
+        matchMode: MatchMode
+    ): DraftFlowState = when (matchMode) {
+        MatchMode.AUTO -> DraftFlowState(
+            moment = DraftMoment.SEARCHING,
+            shouldRecommendPicks = false,
+            shouldShowStrategy = false,
+            message = "Esperando evidencia suficiente del modo de selección"
+        )
+        MatchMode.NORMAL_BLIND -> resolveNormal(board, playerSlot)
+        MatchMode.RANKED_DRAFT -> resolveRanked(board, playerSlot)
+    }
+
+    private fun resolveNormal(
+        board: DraftBoardState,
+        playerSlot: PlayerSlotDetection?
+    ): DraftFlowState {
+        if (board.mode == ScreenMode.IN_GAME) {
+            return resolveRanked(board, playerSlot)
+        }
+        if (board.mode != ScreenMode.DRAFT) {
+            return DraftFlowState(
+                moment = DraftMoment.SEARCHING,
+                shouldRecommendPicks = false,
+                shouldShowStrategy = false,
+                message = "Buscando la selección normal"
+            )
+        }
+        val playerState = playerSlot
+            ?.takeIf { it.side == TeamSide.ALLY }
+            ?.let { board.allySlots.getOrNull(it.slotIndex - 1) }
+        return when (playerState?.status) {
+            DraftSlotStatus.CONFIRMED -> DraftFlowState(
+                moment = DraftMoment.PLAYER_LOCKED,
+                shouldRecommendPicks = false,
+                shouldShowStrategy = true,
+                message = "Tu héroe está fijado; preparando sinergias para la selección normal"
+            )
+            DraftSlotStatus.PREVIEWING -> DraftFlowState(
+                moment = DraftMoment.PLAYER_SELECTING,
+                shouldRecommendPicks = true,
+                shouldShowStrategy = true,
+                message = "Selección normal activa; recomendación de sinergia actualizada"
+            )
+            DraftSlotStatus.EMPTY, null -> DraftFlowState(
+                moment = DraftMoment.TRACKING,
+                shouldRecommendPicks = true,
+                shouldShowStrategy = true,
+                message = "Selección normal activa; recomendación provisional por sinergia"
+            )
+        }
+    }
+
+    private fun resolveRanked(
+        board: DraftBoardState,
+        playerSlot: PlayerSlotDetection?
+    ): DraftFlowState {
         if (board.mode == ScreenMode.IN_GAME) {
             return DraftFlowState(
                 moment = DraftMoment.IN_GAME,

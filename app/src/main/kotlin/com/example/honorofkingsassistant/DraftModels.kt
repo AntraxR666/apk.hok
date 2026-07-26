@@ -76,6 +76,7 @@ data class DraftVisionResult(
     val rawText: String,
     val board: DraftBoardState,
     val screenMode: ScreenMode,
+    val matchMode: MatchModeState = MatchModeState(),
     val subphase: DraftSubphase = DraftSubphase.UNKNOWN,
     val playerSlot: PlayerSlotDetection? = null,
     val slotFingerprints: List<SlotPortraitFingerprint> = emptyList(),

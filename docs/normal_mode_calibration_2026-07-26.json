@@ -1,0 +1,63 @@
+{
+  "source": {
+    "url": "https://www.youtube.com/watch?v=t83Wka385_Q",
+    "video_id": "t83Wka385_Q",
+    "title": "La primer partida en modo normal de honor Kings",
+    "duration_seconds": 1441.262,
+    "source_viewport": {
+      "width": 640,
+      "height": 288
+    },
+    "crop_rectangle": {
+      "left": 0,
+      "top": 0,
+      "right": 640,
+      "bottom": 288
+    },
+    "extraction": "yt-dlp format 18 URL plus ffmpeg input seek; one PNG frame per requested timestamp",
+    "full_video_downloaded": false,
+    "content_in_apk": false
+  },
+  "fixtures": [
+    {
+      "filename": "selection_early.png",
+      "timestamp": "00:45",
+      "timestamp_seconds": 45,
+      "state": "normal_selection_early",
+      "sha256": "48909e1d8806de85fa458cbb130ee59566883b00db32edb2c7a227856983ba76"
+    },
+    {
+      "filename": "selection_populated.png",
+      "timestamp": "01:00",
+      "timestamp_seconds": 60,
+      "state": "normal_selection_populated",
+      "sha256": "662b176276b51a213f77218ad53f82c7883503a7469d489aaaaeaa932a35aeb0"
+    },
+    {
+      "filename": "loading.png",
+      "timestamp": "02:10",
+      "timestamp_seconds": 130,
+      "state": "loading",
+      "sha256": "dfde32481118821cb877298907cfee19b3b0b04fb63f43981f0867622d495db2"
+    }
+  ],
+  "normalized_envelopes": {
+    "hero_catalog": [0.02, 0.05, 0.22, 0.86],
+    "selected_hero": [0.22, 0.05, 0.76, 0.92],
+    "allied_column": [0.76, 0.04, 0.97, 0.88],
+    "confirm_action": [0.80, 0.78, 0.98, 0.98],
+    "ally_row_centers": [0.076389, 0.256944, 0.454861, 0.649306, 0.843750],
+    "ally_rows": [
+      [0.76, 0.04, 0.97, 0.166667],
+      [0.76, 0.166667, 0.97, 0.355903],
+      [0.76, 0.355903, 0.97, 0.552083],
+      [0.76, 0.552083, 0.97, 0.746528],
+      [0.76, 0.746528, 0.97, 0.88]
+    ]
+  },
+  "measurement": {
+    "row_center_pixels_at_640x288": [22, 74, 131, 187, 243],
+    "row_boundaries": "midpoints between measured row centers, clipped to the allied-column top and bottom",
+    "rounding": "reuse NormalizedRect.toPixelRect nearest-integer rounding and clamp to frame bounds"
+  }
+}

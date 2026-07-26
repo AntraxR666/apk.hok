@@ -9,6 +9,8 @@ object AssistantPreferences {
     private const val KEY_ASSISTANT_STAGE = "assistant_stage"
     private const val KEY_MANUAL_PLAYER_SLOT = "manual_player_slot"
     private const val KEY_PLAYER_PICK_OVERRIDE = "player_pick_override"
+    private const val KEY_INPUT_MODE = "input_mode"
+    private const val KEY_MATCH_MODE = "match_mode"
     private const val DEFAULT_PLAYER_NAME = "R-95"
 
     fun getRequestedRole(context: Context): String? = context
@@ -63,6 +65,40 @@ object AssistantPreferences {
             .putString(KEY_PLAYER_PICK_OVERRIDE, override.name)
             .apply()
     }
+
+    fun getInputMode(context: Context): InputMode {
+        val stored = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_INPUT_MODE, InputMode.AUTO_SCAN.name)
+        return parseInputMode(stored)
+    }
+
+    fun setInputMode(context: Context, inputMode: InputMode) {
+        context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_INPUT_MODE, inputMode.name)
+            .apply()
+    }
+
+    fun getMatchMode(context: Context): MatchMode {
+        val stored = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_MATCH_MODE, MatchMode.AUTO.name)
+        return parseMatchMode(stored)
+    }
+
+    fun setMatchMode(context: Context, matchMode: MatchMode) {
+        context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_MATCH_MODE, matchMode.name)
+            .apply()
+    }
+
+    internal fun parseInputMode(stored: String?): InputMode =
+        runCatching { InputMode.valueOf(stored.orEmpty()) }
+            .getOrDefault(InputMode.AUTO_SCAN)
+
+    internal fun parseMatchMode(stored: String?): MatchMode =
+        runCatching { MatchMode.valueOf(stored.orEmpty()) }
+            .getOrDefault(MatchMode.AUTO)
 
     fun getAssistantStage(context: Context): AssistantStage {
         val stored = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)

@@ -14,6 +14,7 @@ class DraftVisionEngine(
     heroes: List<Hero>,
     enemyOnRight: Boolean = true,
     private var playerName: String = "R-95",
+    initialMatchModePreference: MatchMode = MatchMode.AUTO,
     private val callbackExecutor: java.util.concurrent.Executor
 ) : AutoCloseable {
     private val recognizer: TextRecognizer = TextRecognition.getClient(
@@ -25,6 +26,9 @@ class DraftVisionEngine(
     private val processing = AtomicBoolean(false)
     private val diagnosticsTracker = VisionDiagnosticsTracker()
     private val bitmapAnalyzer = DraftBitmapAnalyzer(enemyOnRight)
+    private val matchModeResolver = MatchModeResolver(
+        initialPreference = initialMatchModePreference
+    )
 
     @Volatile
     private var enemyOnRight = enemyOnRight
@@ -42,6 +46,11 @@ class DraftVisionEngine(
         playerName = value.trim()
     }
 
+    fun setMatchModePreference(value: MatchMode): MatchModeState =
+        matchModeResolver.setPreference(value)
+
+    fun matchModeState(): MatchModeState = matchModeResolver.current()
+
     fun learnPortrait(heroName: String, slot: SlotPortraitFingerprint): Boolean =
         portraitMatcher.learn(heroName, slot)
 
@@ -58,10 +67,6 @@ class DraftVisionEngine(
         }
 
         val startedAtNanos = System.nanoTime()
-        val slotFingerprints = runCatching {
-            portraitMatcher.fingerprints(bitmap, enemyOnRight)
-        }.getOrElse { emptyList() }
-        val portraitObservations = portraitMatcher.match(slotFingerprints)
         val prepared = runCatching { OcrBitmapPreprocessor.prepare(bitmap) }
             .getOrElse { error ->
                 processing.set(false)
@@ -83,24 +88,54 @@ class DraftVisionEngine(
                         ocrWidth = ocrBitmap.width,
                         ocrHeight = ocrBitmap.height
                     )
-                    val observations = mergeObservations(
-                        extractOcrObservations(text, ocrBitmap.width),
-                        portraitObservations
+                    val textLines = extractTextLines(text)
+                    val matchMode = matchModeResolver.observe(
+                        NormalSelectionEvidenceDetector.detect(
+                            lines = textLines,
+                            frameWidth = ocrBitmap.width,
+                            frameHeight = ocrBitmap.height,
+                            enemyOnRight = enemyOnRight
+                        )
                     )
-                    val board = bitmapAnalyzer.analyze(bitmap, text.text)
-                    val subphase = DraftSubphaseDetector.detect(
-                        recognizedText = text.text,
-                        screenMode = board.mode,
-                        confirmedPickCount = board.totalConfirmedCount
+                    val ocrCandidates = extractOcrCandidates(text)
+                    val slotFingerprints = if (matchMode.effective == MatchMode.RANKED_DRAFT) {
+                        runCatching {
+                            portraitMatcher.fingerprints(bitmap, enemyOnRight)
+                        }.getOrElse { emptyList() }
+                    } else {
+                        emptyList()
+                    }
+                    val portraitCandidates = portraitMatcher.match(slotFingerprints).map {
+                        PositionedHeroCandidate(
+                            heroName = it.heroName,
+                            confidence = it.confidence,
+                            centerX = -1,
+                            centerY = -1,
+                            source = CandidateSource.PORTRAIT,
+                            sideHint = it.side
+                        )
+                    }
+                    val observations = HeroCandidateRouter.route(
+                        candidates = ocrCandidates + portraitCandidates,
+                        matchMode = matchMode,
+                        frameWidth = ocrBitmap.width,
+                        frameHeight = ocrBitmap.height,
+                        enemyOnRight = enemyOnRight
                     )
+                    val modeVisuals = resolveModeVisuals(bitmap, text, matchMode)
                     onResult(
                         DraftVisionResult(
                             observations = observations,
                             rawText = text.text,
-                            board = board,
-                            screenMode = board.mode,
-                            subphase = subphase,
-                            playerSlot = detectPlayerSlot(text, ocrBitmap.width, ocrBitmap.height),
+                            board = modeVisuals.board,
+                            screenMode = modeVisuals.board.mode,
+                            matchMode = matchMode,
+                            subphase = modeVisuals.subphase,
+                            playerSlot = if (matchMode.effective == MatchMode.RANKED_DRAFT) {
+                                detectPlayerSlot(text, ocrBitmap.width, ocrBitmap.height)
+                            } else {
+                                null
+                            },
                             slotFingerprints = slotFingerprints,
                             diagnostics = diagnostics
                         )
@@ -132,39 +167,84 @@ class DraftVisionEngine(
         }
     }
 
-    private fun mergeObservations(
-        ocr: List<HeroObservation>,
-        portrait: List<HeroObservation>
-    ): List<HeroObservation> {
-        val best = linkedMapOf<Pair<String, TeamSide>, HeroObservation>()
-        (portrait + ocr).forEach { observation ->
-            val key = CounterCatalog.normalize(observation.heroName) to observation.side
-            val current = best[key]
-            if (current == null || observation.confidence > current.confidence) best[key] = observation
-        }
-        return best.values.toList()
-    }
-
-    private fun extractOcrObservations(text: Text, frameWidth: Int): List<HeroObservation> {
-        val bestByHeroAndSide = linkedMapOf<Pair<String, TeamSide>, HeroObservation>()
+    private fun extractOcrCandidates(text: Text): List<PositionedHeroCandidate> {
+        val bestByHeroAndPosition = linkedMapOf<Triple<String, Int, Int>, PositionedHeroCandidate>()
         for (block in text.textBlocks) {
             for (line in block.lines) {
                 val box = line.boundingBox ?: continue
                 val match = matcher.match(line.text) ?: continue
-                val side = classifier.classify(box.centerX(), frameWidth)
-                val observation = HeroObservation(
+                val candidate = PositionedHeroCandidate(
                     heroName = match.hero.name,
-                    side = side,
-                    confidence = match.score.coerceIn(0.0, 1.0)
+                    confidence = match.score.coerceIn(0.0, 1.0),
+                    centerX = box.centerX(),
+                    centerY = box.centerY(),
+                    source = CandidateSource.OCR
                 )
-                val key = observation.heroName to observation.side
-                val previous = bestByHeroAndSide[key]
-                if (previous == null || observation.confidence > previous.confidence) {
-                    bestByHeroAndSide[key] = observation
+                val key = Triple(
+                    CounterCatalog.normalize(candidate.heroName),
+                    candidate.centerX,
+                    candidate.centerY
+                )
+                val previous = bestByHeroAndPosition[key]
+                if (previous == null || candidate.confidence > previous.confidence) {
+                    bestByHeroAndPosition[key] = candidate
                 }
             }
         }
-        return bestByHeroAndSide.values.toList()
+        return bestByHeroAndPosition.values.toList()
+    }
+
+    private fun extractTextLines(text: Text): List<PositionedTextLine> =
+        text.textBlocks.flatMap { block ->
+            block.lines.mapNotNull { line ->
+                val box = line.boundingBox ?: return@mapNotNull null
+                PositionedTextLine(
+                    text = line.text,
+                    centerX = box.centerX(),
+                    centerY = box.centerY()
+                )
+            }
+        }
+
+    private data class ModeVisuals(
+        val board: DraftBoardState,
+        val subphase: DraftSubphase
+    )
+
+    private fun resolveModeVisuals(
+        bitmap: Bitmap,
+        text: Text,
+        matchMode: MatchModeState
+    ): ModeVisuals = when (matchMode.effective) {
+        MatchMode.AUTO -> ModeVisuals(
+            board = DraftBoardState.empty(ScreenMode.UNKNOWN),
+            subphase = DraftSubphaseDetector.detect(text.text, ScreenMode.UNKNOWN, 0)
+        )
+        MatchMode.NORMAL_BLIND -> {
+            val detected = DraftSubphaseDetector.detect(text.text, ScreenMode.UNKNOWN, 0)
+            val subphase = if (detected == DraftSubphase.LOADING) {
+                DraftSubphase.LOADING
+            } else {
+                DraftSubphase.PICK
+            }
+            ModeVisuals(
+                board = DraftBoardState.empty(
+                    if (subphase == DraftSubphase.LOADING) ScreenMode.UNKNOWN else ScreenMode.DRAFT
+                ),
+                subphase = subphase
+            )
+        }
+        MatchMode.RANKED_DRAFT -> {
+            val board = bitmapAnalyzer.analyze(bitmap, text.text)
+            ModeVisuals(
+                board = board,
+                subphase = DraftSubphaseDetector.detect(
+                    recognizedText = text.text,
+                    screenMode = board.mode,
+                    confirmedPickCount = board.totalConfirmedCount
+                )
+            )
+        }
     }
 
     private fun detectPlayerSlot(text: Text, frameWidth: Int, frameHeight: Int): PlayerSlotDetection? {

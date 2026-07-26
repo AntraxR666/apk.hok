@@ -42,6 +42,8 @@ class ScreenCaptureService : Service() {
     private var enemyOnRight = true
     private var selectedStage = AssistantStage.PAUSED
     private var suggestedStage: AssistantStage? = null
+    private var inputMode = InputMode.AUTO_SCAN
+    private var matchMode = MatchModeState()
     private var lastFrameAt = 0L
     private var forceNextFrame = false
     private var lastVisionSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
@@ -71,6 +73,9 @@ class ScreenCaptureService : Service() {
         playerSlotResolver = PlayerSlotResolver(requiredHits = 4, maxMisses = 4)
         manualPlayerSlotIndex = AssistantPreferences.getManualPlayerSlot(this)
         playerPickOverride = AssistantPreferences.getPlayerPickOverride(this)
+        inputMode = AssistantPreferences.getInputMode(this)
+        val matchModePreference = AssistantPreferences.getMatchMode(this)
+        matchMode = MatchModeState(preference = matchModePreference)
         lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
         selectedStage = AssistantPreferences.getAssistantStage(this)
         workerThread = HandlerThread("HoKDraftCapture").also { it.start() }
@@ -84,8 +89,10 @@ class ScreenCaptureService : Service() {
             heroes = counterEngine.allHeroes(),
             enemyOnRight = enemyOnRight,
             playerName = AssistantPreferences.getPlayerName(this),
+            initialMatchModePreference = matchModePreference,
             callbackExecutor = callbackExecutor
         )
+        matchMode = visionEngine.matchModeState()
         createNotificationChannel()
     }
 
@@ -100,6 +107,54 @@ class ScreenCaptureService : Service() {
                     ?.let { runCatching { AssistantStage.valueOf(it) }.getOrNull() }
                     ?: return START_NOT_STICKY
                 setStage(requested)
+                return START_NOT_STICKY
+            }
+            ACTION_SET_INPUT_MODE -> {
+                val requested = intent.getStringExtra(EXTRA_INPUT_MODE)
+                    ?.let { runCatching { InputMode.valueOf(it) }.getOrNull() }
+                    ?: return START_NOT_STICKY
+                inputMode = requested
+                AssistantPreferences.setInputMode(this, inputMode)
+                tracker.reset()
+                lastVisionSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
+                lastSlotFingerprints = emptyList()
+                publishCurrent(
+                    if (inputMode == InputMode.MANUAL) {
+                        "Entrada manual activa; el escaneo no añadirá héroes"
+                    } else {
+                        "Escaneo automático activo; esperando evidencia estable"
+                    }
+                )
+                return START_NOT_STICKY
+            }
+            ACTION_SET_MATCH_MODE -> {
+                val requested = intent.getStringExtra(EXTRA_MATCH_MODE)
+                    ?.let { runCatching { MatchMode.valueOf(it) }.getOrNull() }
+                    ?: return START_NOT_STICKY
+                AssistantPreferences.setMatchMode(this, requested)
+                matchMode = visionEngine.setMatchModePreference(requested)
+                tracker.reset()
+                boardStabilizer.reset()
+                playerSlotResolver.reset()
+                lastVisionSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
+                lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
+                lastSlotFingerprints = emptyList()
+                lastBoard = DraftBoardState.empty(
+                    if (matchMode.effective == MatchMode.AUTO) {
+                        ScreenMode.UNKNOWN
+                    } else {
+                        ScreenMode.DRAFT
+                    }
+                )
+                lastScreenMode = lastBoard.mode
+                lastSubphase = DraftSubphase.UNKNOWN
+                publishCurrent(
+                    when (requested) {
+                        MatchMode.AUTO -> "Modo de partida automático; esperando evidencia decisiva"
+                        MatchMode.RANKED_DRAFT -> "Draft clasificatorio fijado manualmente"
+                        MatchMode.NORMAL_BLIND -> "Selección normal fijada manualmente"
+                    }
+                )
                 return START_NOT_STICKY
             }
             ACTION_SWAP_SIDES -> {
@@ -201,6 +256,8 @@ class ScreenCaptureService : Service() {
                     status = "Asistente listo para ${PersonalDeviceProfile.MODEL}. Elige Selección o Partida.",
                     selectedStage = selectedStage,
                     suggestedStage = null,
+                    inputMode = inputMode,
+                    matchMode = matchMode,
                     enemyOnRight = enemyOnRight
                 )
             )
@@ -357,19 +414,49 @@ class ScreenCaptureService : Service() {
                 lastVisionDiagnostics = result.diagnostics
                 lastScreenMode = result.screenMode
                 lastSubphase = result.subphase
+                val previousEffectiveMatchMode = matchMode.effective
+                matchMode = result.matchMode
+                if (matchMode.effective != previousEffectiveMatchMode) {
+                    tracker.reset()
+                    boardStabilizer.reset()
+                    playerSlotResolver.reset()
+                    lastVisionSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
+                    lastBoard = DraftBoardState.empty(result.screenMode)
+                    lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
+                    lastSlotFingerprints = emptyList()
+                }
                 suggestedStage = AssistantStagePolicy.suggest(
                     selectedStage = selectedStage,
                     detectedScene = result.screenMode.toDetectedScene()
                 )
 
                 if (result.screenMode == ScreenMode.DRAFT) {
-                    lastBoard = boardStabilizer.stabilize(result.board)
-                    lastPlayerSlot = playerSlotResolver.resolve(
-                        result.playerSlot,
-                        manualPlayerSlotIndex
-                    )
-                    lastSlotFingerprints = result.slotFingerprints
-                    lastVisionSnapshot = tracker.observe(result.observations)
+                    if (inputMode == InputMode.AUTO_SCAN) {
+                        when (matchMode.effective) {
+                            MatchMode.RANKED_DRAFT -> {
+                                lastBoard = boardStabilizer.stabilize(result.board)
+                                lastPlayerSlot = playerSlotResolver.resolve(
+                                    result.playerSlot,
+                                    manualPlayerSlotIndex
+                                )
+                                lastSlotFingerprints = result.slotFingerprints
+                            }
+                            MatchMode.NORMAL_BLIND -> {
+                                lastBoard = result.board
+                                lastPlayerSlot = playerSlotResolver.resolve(
+                                    null,
+                                    manualPlayerSlotIndex
+                                )
+                                lastSlotFingerprints = emptyList()
+                            }
+                            MatchMode.AUTO -> Unit
+                        }
+                        lastVisionSnapshot = tracker.observe(result.observations)
+                    } else {
+                        lastBoard = DraftBoardState.empty(ScreenMode.DRAFT)
+                        lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
+                        lastSlotFingerprints = emptyList()
+                    }
                 }
 
                 val stabilizedResult = result.copy(board = lastBoard)
@@ -408,6 +495,9 @@ class ScreenCaptureService : Service() {
     private fun buildDraftStatus(result: DraftVisionResult): String {
         val board = result.board
         val identityCount = result.observations.size
+        if (result.matchMode.effective == MatchMode.NORMAL_BLIND) {
+            return "Selección normal · $identityCount aliados reconocidos · sin observaciones enemigas"
+        }
         val progress = "Draft ${board.totalConfirmedCount}/10"
         val active = when (board.activeSide) {
             TeamSide.ALLY -> "turno aliado"
@@ -459,7 +549,11 @@ class ScreenCaptureService : Service() {
     private fun publishCurrent(status: String) {
         val merged = mergeManual(lastVisionSnapshot)
         val requestedRole = AssistantPreferences.getRequestedRole(this)
-        val automaticFlow = DraftFlowResolver.resolve(lastBoard, lastPlayerSlot)
+        val automaticFlow = DraftFlowResolver.resolve(
+            lastBoard,
+            lastPlayerSlot,
+            matchMode.effective
+        )
         val flow = PlayerPickStatePolicy.apply(automaticFlow, playerPickOverride)
         val allCandidates = recommendationEngine.recommend(
             merged,
@@ -508,6 +602,8 @@ class ScreenCaptureService : Service() {
                 },
                 selectedStage = selectedStage,
                 suggestedStage = suggestedStage,
+                inputMode = inputMode,
+                matchMode = matchMode,
                 snapshot = merged,
                 recommendations = recommendations,
                 strategy = strategy,
@@ -632,6 +728,8 @@ class ScreenCaptureService : Service() {
         const val ACTION_START = "com.example.honorofkingsassistant.START_CAPTURE"
         const val ACTION_STOP = "com.example.honorofkingsassistant.STOP_CAPTURE"
         const val ACTION_SET_STAGE = "com.example.honorofkingsassistant.SET_STAGE"
+        const val ACTION_SET_INPUT_MODE = "com.example.honorofkingsassistant.SET_INPUT_MODE"
+        const val ACTION_SET_MATCH_MODE = "com.example.honorofkingsassistant.SET_MATCH_MODE"
         const val ACTION_SWAP_SIDES = "com.example.honorofkingsassistant.SWAP_SIDES"
         const val ACTION_FORCE_SCAN = "com.example.honorofkingsassistant.FORCE_SCAN"
         const val ACTION_MANUAL_ADD = "com.example.honorofkingsassistant.MANUAL_ADD"
@@ -643,6 +741,8 @@ class ScreenCaptureService : Service() {
         const val EXTRA_HERO_NAME = "extra_hero_name"
         const val EXTRA_TEAM_SIDE = "extra_team_side"
         const val EXTRA_ASSISTANT_STAGE = "extra_assistant_stage"
+        const val EXTRA_INPUT_MODE = "extra_input_mode"
+        const val EXTRA_MATCH_MODE = "extra_match_mode"
         const val EXTRA_PLAYER_SLOT_INDEX = "extra_player_slot_index"
         const val EXTRA_PLAYER_PICK_OVERRIDE = "extra_player_pick_override"
 

@@ -7,6 +7,8 @@ data class AssistantUiState(
     val status: String = "Asistente detenido",
     val selectedStage: AssistantStage = AssistantStage.PAUSED,
     val suggestedStage: AssistantStage? = null,
+    val inputMode: InputMode = InputMode.AUTO_SCAN,
+    val matchMode: MatchModeState = MatchModeState(),
     val snapshot: DraftSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList()),
     val recommendations: List<DraftPickRecommendation> = emptyList(),
     val strategy: StrategyPlan? = null,
