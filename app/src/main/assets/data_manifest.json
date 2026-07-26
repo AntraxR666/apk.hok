@@ -19,6 +19,14 @@
       "type": "independent_current_meta",
       "name": "HoKStats.gg international server database",
       "purpose": "Current patch tier, matchup and rate context"
+    },
+    {
+      "type": "independent_item_snapshot",
+      "name": "HoK Meta items API snapshot",
+      "purpose": "Offline item identifiers, English source names, costs and recommendation tags",
+      "snapshot_asset": "hok_items.json",
+      "source_url": "https://hokmeta.com/api/items.json",
+      "localization_note": "Item names remain in the verified source language until Spanish in-game labels are captured; recommendations never invent localized item names."
     }
   ],
   "counter_relations": {
