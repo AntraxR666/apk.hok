@@ -99,6 +99,42 @@ class RecognitionBootstrapTest {
     }
 
     @Test
+    fun templateDomainsRemainIsolatedWithoutDoubleCountingHeroCoverage() {
+        val store = PortraitTemplateStore(InMemoryPortraitTemplatePersistence())
+        assertTrue(
+            store.learn(
+                "Angela",
+                fingerprint(61),
+                PortraitTemplateDomain.DRAFT_PORTRAIT
+            )
+        )
+        assertTrue(
+            store.learn(
+                "Angela",
+                fingerprint(62),
+                PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+            )
+        )
+
+        assertEquals(
+            fingerprint(61).encode(),
+            store.templates(PortraitTemplateDomain.DRAFT_PORTRAIT)
+                .getValue("angela")
+                .single()
+                .encode()
+        )
+        assertEquals(
+            fingerprint(62).encode(),
+            store.templates(PortraitTemplateDomain.LOADING_CARD_PORTRAIT)
+                .getValue("angela")
+                .single()
+                .encode()
+        )
+        assertEquals(2, store.calibrationState().storedTemplateCount)
+        assertEquals(1, store.calibrationState().coveredHeroCount)
+    }
+
+    @Test
     fun duplicateGalleryEvidenceInOneFrameCountsOnce() {
         val engine = GalleryCalibrationEngine(
             heroes = listOf(angela()),

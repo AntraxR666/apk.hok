@@ -95,13 +95,19 @@ class HeroPortraitMatcher(
             }
     }
 
-    fun match(fingerprints: List<SlotPortraitFingerprint>): List<HeroObservation> =
-        matchSlots(fingerprints).map { match ->
+    fun match(
+        fingerprints: List<SlotPortraitFingerprint>,
+        domain: PortraitTemplateDomain = PortraitTemplateDomain.DRAFT_PORTRAIT
+    ): List<HeroObservation> =
+        matchSlots(fingerprints, domain).map { match ->
             HeroObservation(match.heroName, match.side, match.confidence)
         }
 
-    fun matchSlots(fingerprints: List<SlotPortraitFingerprint>): List<SlotHeroMatch> {
-        val templates = store.templates()
+    fun matchSlots(
+        fingerprints: List<SlotPortraitFingerprint>,
+        domain: PortraitTemplateDomain = PortraitTemplateDomain.DRAFT_PORTRAIT
+    ): List<SlotHeroMatch> {
+        val templates = store.templates(domain)
         if (templates.isEmpty()) return emptyList()
         return fingerprints.mapNotNull slotLoop@ { slot ->
             val candidates = templates.mapNotNull { (normalizedHero, heroTemplates) ->
@@ -126,8 +132,11 @@ class HeroPortraitMatcher(
         }
     }
 
-    fun learn(heroName: String, slot: SlotPortraitFingerprint): Boolean =
-        store.learn(heroName, slot.fingerprint)
+    fun learn(
+        heroName: String,
+        slot: SlotPortraitFingerprint,
+        domain: PortraitTemplateDomain = PortraitTemplateDomain.DRAFT_PORTRAIT
+    ): Boolean = store.learn(heroName, slot.fingerprint, domain)
 
     private fun normalizedPixels(bitmap: Bitmap, region: NormalizedRect): IntArray {
         val rect = region.toPixelRect(bitmap.width, bitmap.height)

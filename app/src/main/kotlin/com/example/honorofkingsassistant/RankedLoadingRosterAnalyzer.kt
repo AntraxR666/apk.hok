@@ -4,7 +4,9 @@ import kotlin.math.roundToInt
 
 data class RankedLoadingRosterGeometry(
     val allyCards: List<PixelRect>,
-    val enemyCards: List<PixelRect>
+    val enemyCards: List<PixelRect>,
+    val allyPortraits: List<PixelRect>,
+    val enemyPortraits: List<PixelRect>
 )
 
 data class LoadingRosterCardEvidence(
@@ -22,11 +24,16 @@ data class LoadingRosterCardEvidence(
 
 data class PreservedRosterIdentity(
     val side: TeamSide,
-    val slotIndex: Int,
+    val slotIndex: Int?,
     val heroName: String,
     val confidence: Double,
     val isManual: Boolean
-)
+) {
+    init {
+        require(side != TeamSide.UNKNOWN)
+        require(slotIndex == null || slotIndex in 1..5)
+    }
+}
 
 data class LoadingRosterAssignment(
     val side: TeamSide,
@@ -114,18 +121,31 @@ class RankedLoadingRosterAnalyzer {
         manualPlayerSlotIndex: Int? = null
     ): LoadingRosterReconciliationResult {
         require(manualPlayerSlotIndex == null || manualPlayerSlotIndex in 1..5)
-        val preservedBySlot = preserved.associateBy { it.side to it.slotIndex }
+        val preservedBySlot = buildMap<Pair<TeamSide, Int>, PreservedRosterIdentity> {
+            preserved.sortedBy { it.isManual }.forEach { identity ->
+                identity.slotIndex?.let { slot -> put(identity.side to slot, identity) }
+            }
+        }
+        val manualByHero = preserved
+            .filter { it.isManual }
+            .associateBy { it.side to CounterCatalog.normalize(it.heroName) }
         val assignments = linkedMapOf<Pair<TeamSide, Int>, LoadingRosterAssignment>()
         val conflicts = mutableListOf<LoadingRosterConflict>()
 
         preserved.forEach { identity ->
-            assignments[identity.side to identity.slotIndex] = LoadingRosterAssignment(
-                side = identity.side,
-                slotIndex = identity.slotIndex,
-                heroName = identity.heroName,
-                confidence = identity.confidence,
-                preservedManualEvidence = identity.isManual
-            )
+            identity.slotIndex?.let { slot ->
+                val key = identity.side to slot
+                val current = assignments[key]
+                if (current == null || identity.isManual) {
+                    assignments[key] = LoadingRosterAssignment(
+                        side = identity.side,
+                        slotIndex = slot,
+                        heroName = identity.heroName,
+                        confidence = identity.confidence,
+                        preservedManualEvidence = identity.isManual
+                    )
+                }
+            }
         }
 
         cards.forEach { card ->
@@ -155,6 +175,9 @@ class RankedLoadingRosterAnalyzer {
                 else -> 0.88
             }
             val existing = preservedBySlot[key]
+            val manualForObserved = manualByHero[
+                card.side to CounterCatalog.normalize(observedHero)
+            ]
             if (existing?.isManual == true &&
                 CounterCatalog.normalize(existing.heroName) !=
                 CounterCatalog.normalize(observedHero)
@@ -165,6 +188,28 @@ class RankedLoadingRosterAnalyzer {
                     observedHeroName = observedHero,
                     preservedHeroName = existing.heroName,
                     reason = "La evidencia de carga contradice una identidad manual"
+                )
+                return@forEach
+            }
+            if (manualForObserved != null) {
+                if (manualForObserved.slotIndex != null &&
+                    manualForObserved.slotIndex != card.slotIndex
+                ) {
+                    conflicts += LoadingRosterConflict(
+                        side = card.side,
+                        slotIndex = card.slotIndex,
+                        observedHeroName = observedHero,
+                        preservedHeroName = manualForObserved.heroName,
+                        reason = "La evidencia de carga duplica una identidad manual en otra posición"
+                    )
+                    return@forEach
+                }
+                assignments[key] = LoadingRosterAssignment(
+                    side = card.side,
+                    slotIndex = card.slotIndex,
+                    heroName = manualForObserved.heroName,
+                    confidence = manualForObserved.confidence,
+                    preservedManualEvidence = true
                 )
                 return@forEach
             }
@@ -202,6 +247,11 @@ class RankedLoadingRosterAnalyzer {
         private const val ALLY_BOTTOM = 0.49
         private const val ENEMY_TOP = 0.54
         private const val ENEMY_BOTTOM = 1.0
+        private const val PORTRAIT_HORIZONTAL_INSET = 0.04
+        private const val ALLY_PORTRAIT_TOP_INSET = 0.02
+        private const val ALLY_PORTRAIT_BOTTOM_INSET = 0.305
+        private const val ENEMY_PORTRAIT_TOP_INSET = 0.04
+        private const val ENEMY_PORTRAIT_BOTTOM_INSET = 0.28
 
         fun geometry(frameWidth: Int, frameHeight: Int): RankedLoadingRosterGeometry {
             require(frameWidth > 0 && frameHeight > 0)
@@ -216,9 +266,35 @@ class RankedLoadingRosterAnalyzer {
                         bottom = (bottom * frameHeight).roundToInt().coerceIn(1, frameHeight)
                     )
                 }
+            fun portraits(
+                cards: List<PixelRect>,
+                topInset: Double,
+                bottomInset: Double
+            ): List<PixelRect> = cards.map { card ->
+                val horizontalInset =
+                    (card.width * PORTRAIT_HORIZONTAL_INSET).roundToInt()
+                PixelRect(
+                    left = card.left + horizontalInset,
+                    top = card.top + (card.height * topInset).roundToInt(),
+                    right = card.right - horizontalInset,
+                    bottom = card.bottom - (card.height * bottomInset).roundToInt()
+                )
+            }
+            val allyCards = row(ALLY_TOP, ALLY_BOTTOM)
+            val enemyCards = row(ENEMY_TOP, ENEMY_BOTTOM)
             return RankedLoadingRosterGeometry(
-                allyCards = row(ALLY_TOP, ALLY_BOTTOM),
-                enemyCards = row(ENEMY_TOP, ENEMY_BOTTOM)
+                allyCards = allyCards,
+                enemyCards = enemyCards,
+                allyPortraits = portraits(
+                    allyCards,
+                    ALLY_PORTRAIT_TOP_INSET,
+                    ALLY_PORTRAIT_BOTTOM_INSET
+                ),
+                enemyPortraits = portraits(
+                    enemyCards,
+                    ENEMY_PORTRAIT_TOP_INSET,
+                    ENEMY_PORTRAIT_BOTTOM_INSET
+                )
             )
         }
     }
@@ -243,14 +319,22 @@ object RankedLoadingSessionStateRouter {
             manualPlayerSlotIndex = state.manualPlayerSlotIndex
         )
 
-        fun mergedSide(side: TeamSide, existing: List<ConfirmedHero>): List<ConfirmedHero> =
-            (reconciliation.assignments.asSequence()
+        fun mergedSide(side: TeamSide, existing: List<ConfirmedHero>): List<ConfirmedHero> {
+            val manual = preserved.asSequence()
+                .filter { it.side == side && it.isManual }
+                .map { identity ->
+                    ConfirmedHero(identity.heroName, side, identity.confidence)
+                }
+                .toList()
+            val automatic = reconciliation.assignments.asSequence()
                 .filter { it.side == side }
                 .map { assignment ->
                     ConfirmedHero(assignment.heroName, side, assignment.confidence)
                 }
-                .toList() + existing)
+                .toList()
+            return (manual + automatic + existing)
                 .distinctBy { CounterCatalog.normalize(it.heroName) }
+        }
 
         val snapshot = state.snapshot.copy(
             allies = mergedSide(TeamSide.ALLY, state.snapshot.allies),

@@ -523,19 +523,11 @@ class ScreenCaptureService : Service() {
                 if (matchMode.effective == MatchMode.RANKED_DRAFT &&
                     result.subphase == DraftSubphase.LOADING
                 ) {
-                    val preservedManual = lastLoadingRosterReconciliation
-                        ?.assignments
-                        .orEmpty()
-                        .filter { it.preservedManualEvidence }
-                        .map { assignment ->
-                            PreservedRosterIdentity(
-                                side = assignment.side,
-                                slotIndex = assignment.slotIndex,
-                                heroName = assignment.heroName,
-                                confidence = assignment.confidence,
-                                isManual = true
-                            )
-                        }
+                    val preservedManual = ManualRosterAuthority.preservedIdentities(
+                        manualAllies = manualAllies,
+                        manualEnemies = manualEnemies,
+                        previous = lastLoadingRosterReconciliation
+                    )
                     val routed = RankedLoadingSessionStateRouter.route(
                         state = AssistantSessionBus.state.copy(
                             snapshot = lastVisionSnapshot,
@@ -739,11 +731,7 @@ class ScreenCaptureService : Service() {
     }
 
     private fun mergeManual(snapshot: DraftSnapshot): DraftSnapshot {
-        val allies = (snapshot.allies + manualAllies.map { ConfirmedHero(it, TeamSide.ALLY, 1.0) })
-            .distinctBy { CounterCatalog.normalize(it.heroName) }
-        val enemies = (snapshot.enemies + manualEnemies.map { ConfirmedHero(it, TeamSide.ENEMY, 1.0) })
-            .distinctBy { CounterCatalog.normalize(it.heroName) }
-        return snapshot.copy(allies = allies, enemies = enemies)
+        return ManualDraftSnapshotMerger.merge(snapshot, manualAllies, manualEnemies)
     }
 
     private fun startOverlayService() {

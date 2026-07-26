@@ -33,6 +33,7 @@ data class RankedLoadingCardRasterEvidence(
     val side: TeamSide,
     val slotIndex: Int,
     val region: PixelRect,
+    val portraitRegion: PixelRect,
     val visualStats: SlotVisualStats,
     val fingerprint: PortraitFingerprint,
     val visualConfidence: Double
@@ -90,20 +91,26 @@ object RankedRasterRoiAnalyzer {
     fun loadingCards(raster: ArgbRaster): List<RankedLoadingCardRasterEvidence> {
         require(raster.width > 0 && raster.height > 0)
         val geometry = RankedLoadingRosterAnalyzer.geometry(raster.width, raster.height)
-        fun row(side: TeamSide, regions: List<PixelRect>) =
+        fun row(
+            side: TeamSide,
+            regions: List<PixelRect>,
+            portraitRegions: List<PixelRect>
+        ) =
             regions.mapIndexed { index, region ->
-                val pixels = sampleArgb64(raster, region)
+                val portraitRegion = portraitRegions[index]
+                val pixels = sampleArgb64(raster, portraitRegion)
                 RankedLoadingCardRasterEvidence(
                     side = side,
                     slotIndex = index + 1,
                     region = region,
-                    visualStats = visualStats(raster, region),
+                    portraitRegion = portraitRegion,
+                    visualStats = visualStats(raster, portraitRegion),
                     fingerprint = PortraitFingerprint.fromArgb64(pixels),
                     visualConfidence = visualConfidence(pixels)
                 )
             }
-        return row(TeamSide.ALLY, geometry.allyCards) +
-            row(TeamSide.ENEMY, geometry.enemyCards)
+        return row(TeamSide.ALLY, geometry.allyCards, geometry.allyPortraits) +
+            row(TeamSide.ENEMY, geometry.enemyCards, geometry.enemyPortraits)
     }
 
     fun visualStats(raster: ArgbRaster, region: NormalizedRect): SlotVisualStats =

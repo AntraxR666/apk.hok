@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.zip.InflaterInputStream
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -62,10 +63,103 @@ class RankedFixtureRasterTest {
         val allyR95Card = cards.first { it.side == TeamSide.ALLY && it.slotIndex == 4 }
         val enemyCardFour = cards.first { it.side == TeamSide.ENEMY && it.slotIndex == 4 }
         assertEquals(PixelRect(487, 0, 581, 192), allyR95Card.region)
+        assertEquals(PixelRect(491, 4, 577, 133), allyR95Card.portraitRegion)
+        assertEquals(PixelRect(491, 219, 577, 342), enemyCardFour.portraitRegion)
         assertTrue(534 in allyR95Card.region.left until allyR95Card.region.right)
         assertTrue(150 in allyR95Card.region.top until allyR95Card.region.bottom)
+        assertFalse(150 in allyR95Card.portraitRegion.top until allyR95Card.portraitRegion.bottom)
         assertTrue(allyR95Card.visualStats.edgeDensity > 0.01)
         assertTrue(allyR95Card.fingerprint.distance(enemyCardFour.fingerprint) > 0.01)
+    }
+
+    @Test
+    fun realLoadingPortraitMatchesSameRepresentationTemplateAndRejectsAmbiguity() {
+        val card = RankedRasterRoiAnalyzer
+            .loadingCards(fixtureRaster("loading_roster_0245.png"))
+            .first { it.side == TeamSide.ALLY && it.slotIndex == 4 }
+        val slot = SlotPortraitFingerprint(
+            side = card.side,
+            slotIndex = card.slotIndex,
+            fingerprint = card.fingerprint,
+            visualConfidence = card.visualConfidence
+        )
+        val draftTemplateStore = PortraitTemplateStore(InMemoryPortraitTemplatePersistence())
+        assertTrue(draftTemplateStore.learn("Angela", card.fingerprint))
+        val draftTemplateMatcher = HeroPortraitMatcher(
+            CounterCatalog(listOf(hero("angela", "Angela"))),
+            draftTemplateStore
+        )
+        assertTrue(
+            draftTemplateMatcher.matchSlots(
+                listOf(slot),
+                PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+            ).isEmpty()
+        )
+
+        val singleTemplateStore = PortraitTemplateStore(InMemoryPortraitTemplatePersistence())
+        assertTrue(
+            singleTemplateStore.learn(
+                "Angela",
+                card.fingerprint,
+                PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+            )
+        )
+        val singleTemplateMatcher = HeroPortraitMatcher(
+            CounterCatalog(listOf(hero("angela", "Angela"))),
+            singleTemplateStore
+        )
+
+        val match = singleTemplateMatcher.matchSlots(
+            listOf(slot),
+            PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+        ).single()
+
+        assertEquals("Angela", match.heroName)
+        assertEquals(4, match.slotIndex)
+
+        val ambiguousStore = PortraitTemplateStore(InMemoryPortraitTemplatePersistence())
+        assertTrue(
+            ambiguousStore.learn(
+                "Angela",
+                card.fingerprint,
+                PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+            )
+        )
+        assertTrue(
+            ambiguousStore.learn(
+                "Lam",
+                card.fingerprint,
+                PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+            )
+        )
+        val ambiguousMatcher = HeroPortraitMatcher(
+            CounterCatalog(listOf(hero("angela", "Angela"), hero("lam", "Lam"))),
+            ambiguousStore
+        )
+
+        assertTrue(
+            ambiguousMatcher.matchSlots(
+                listOf(slot),
+                PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+            ).isEmpty()
+        )
+    }
+
+    private fun hero(id: String, name: String) = Hero(
+        id = id,
+        name = name,
+        role = "Test",
+        counters = emptyList()
+    )
+
+    private class InMemoryPortraitTemplatePersistence : PortraitTemplatePersistence {
+        private var value: String? = null
+
+        override fun read(): String? = value
+
+        override fun write(value: String?) {
+            this.value = value
+        }
     }
 
     private fun fixtureRaster(filename: String): ArgbRaster {

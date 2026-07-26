@@ -125,6 +125,170 @@ class RankedProductionRoutingTest {
         assertEquals(listOf("Lam"), state.snapshot.allies.map { it.heroName })
     }
 
+    @Test
+    fun actualManualRosterSetsBecomeConfidenceOnePreservedIdentities() {
+        val preserved = ManualRosterAuthority.preservedIdentities(
+            manualAllies = setOf("Angela"),
+            manualEnemies = setOf("Lam"),
+            previous = LoadingRosterReconciliationResult(
+                assignments = listOf(
+                    LoadingRosterAssignment(
+                        side = TeamSide.ALLY,
+                        slotIndex = 4,
+                        heroName = "Angela",
+                        confidence = 0.88,
+                        preservedManualEvidence = false
+                    )
+                ),
+                conflicts = emptyList(),
+                playerSlotIndex = null
+            )
+        )
+
+        assertEquals(2, preserved.size)
+        assertTrue(preserved.all { it.isManual })
+        assertTrue(preserved.all { it.confidence == 1.0 })
+        assertEquals(
+            4,
+            preserved.single { it.side == TeamSide.ALLY }.slotIndex
+        )
+        assertEquals(
+            null,
+            preserved.single { it.side == TeamSide.ENEMY }.slotIndex
+        )
+    }
+
+    @Test
+    fun loadingRouterPreservesManualHeroAuthorityOverAutomaticEvidenceAndSnapshot() {
+        val result = DraftVisionResult(
+            observations = emptyList(),
+            rawText = "Angela",
+            board = DraftBoardState.empty(ScreenMode.UNKNOWN),
+            screenMode = ScreenMode.UNKNOWN,
+            matchMode = MatchModeState(detected = MatchMode.RANKED_DRAFT),
+            subphase = DraftSubphase.LOADING,
+            loadingRosterEvidence = listOf(
+                LoadingRosterCardEvidence(
+                    side = TeamSide.ALLY,
+                    slotIndex = 4,
+                    portraitHeroName = "Angela"
+                )
+            )
+        )
+        val preserved = ManualRosterAuthority.preservedIdentities(
+            manualAllies = setOf("Angela"),
+            manualEnemies = emptySet(),
+            previous = null
+        )
+
+        val state = RankedLoadingSessionStateRouter.route(
+            state = AssistantUiState(
+                snapshot = DraftSnapshot(
+                    allies = listOf(ConfirmedHero("Angela", TeamSide.ALLY, 0.62)),
+                    enemies = emptyList(),
+                    unknown = emptyList()
+                )
+            ),
+            result = result,
+            configuredPlayerName = "R-95",
+            preserved = preserved
+        )
+
+        val assignment = requireNotNull(state.loadingRosterReconciliation)
+            .assignments
+            .single()
+        assertEquals(4, assignment.slotIndex)
+        assertEquals("Angela", assignment.heroName)
+        assertEquals(1.0, assignment.confidence, 0.0)
+        assertTrue(assignment.preservedManualEvidence)
+        assertEquals(1.0, state.snapshot.allies.single().confidence, 0.0)
+    }
+
+    @Test
+    fun manualDraftMergeWinsHeroDeduplicationAgainstAutomaticSnapshot() {
+        val merged = ManualDraftSnapshotMerger.merge(
+            snapshot = DraftSnapshot(
+                allies = listOf(ConfirmedHero("Angela", TeamSide.ALLY, 0.62)),
+                enemies = listOf(ConfirmedHero("Lam", TeamSide.ENEMY, 0.88)),
+                unknown = emptyList()
+            ),
+            manualAllies = setOf("Angela"),
+            manualEnemies = setOf("Lam")
+        )
+
+        assertEquals(1.0, merged.allies.single().confidence, 0.0)
+        assertEquals(1.0, merged.enemies.single().confidence, 0.0)
+    }
+
+    @Test
+    fun loadingUsesOnlyLoadingCardPortraitTemplates() {
+        assertEquals(
+            PortraitTemplateDomain.LOADING_CARD_PORTRAIT,
+            PortraitTemplateDomainPolicy.forFrame(
+                matchMode = MatchMode.RANKED_DRAFT,
+                subphase = DraftSubphase.LOADING
+            )
+        )
+        assertEquals(
+            PortraitTemplateDomain.DRAFT_PORTRAIT,
+            PortraitTemplateDomainPolicy.forFrame(
+                matchMode = MatchMode.RANKED_DRAFT,
+                subphase = DraftSubphase.PICK
+            )
+        )
+        assertEquals(
+            PortraitTemplateDomain.DRAFT_PORTRAIT,
+            PortraitTemplateDomainPolicy.forFrame(
+                matchMode = MatchMode.NORMAL_BLIND,
+                subphase = DraftSubphase.LOADING
+            )
+        )
+    }
+
+    @Test
+    fun unresolvedLoadingIdentityKeepsPriorAndManualRosterWithoutInventingAssignment() {
+        val result = DraftVisionResult(
+            observations = emptyList(),
+            rawText = "R95",
+            board = DraftBoardState.empty(ScreenMode.UNKNOWN),
+            screenMode = ScreenMode.UNKNOWN,
+            matchMode = MatchModeState(detected = MatchMode.RANKED_DRAFT),
+            subphase = DraftSubphase.LOADING,
+            loadingRosterEvidence = listOf(
+                LoadingRosterCardEvidence(
+                    side = TeamSide.ALLY,
+                    slotIndex = 4,
+                    playerName = "R95"
+                )
+            )
+        )
+
+        val state = RankedLoadingSessionStateRouter.route(
+            state = AssistantUiState(
+                snapshot = DraftSnapshot(
+                    allies = listOf(ConfirmedHero("Angela", TeamSide.ALLY, 0.93)),
+                    enemies = emptyList(),
+                    unknown = emptyList()
+                )
+            ),
+            result = result,
+            configuredPlayerName = "R-95",
+            preserved = ManualRosterAuthority.preservedIdentities(
+                manualAllies = setOf("Lam"),
+                manualEnemies = emptySet(),
+                previous = null
+            )
+        )
+
+        val reconciliation = requireNotNull(state.loadingRosterReconciliation)
+        assertTrue(reconciliation.assignments.isEmpty())
+        assertEquals(4, reconciliation.playerSlotIndex)
+        assertEquals(
+            listOf("Lam", "Angela"),
+            state.snapshot.allies.map { it.heroName }
+        )
+    }
+
     private fun angela() = Hero(
         id = "angela",
         name = "Angela",

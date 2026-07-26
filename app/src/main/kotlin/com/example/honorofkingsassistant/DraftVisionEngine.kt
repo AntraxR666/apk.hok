@@ -58,8 +58,11 @@ class DraftVisionEngine(
         return matchModeResolver.current()
     }
 
-    fun learnPortrait(heroName: String, slot: SlotPortraitFingerprint): Boolean =
-        portraitMatcher.learn(heroName, slot)
+    fun learnPortrait(
+        heroName: String,
+        slot: SlotPortraitFingerprint,
+        domain: PortraitTemplateDomain = PortraitTemplateDomain.DRAFT_PORTRAIT
+    ): Boolean = portraitMatcher.learn(heroName, slot, domain)
 
     fun recognitionReadiness(): RecognitionReadiness = portraitTemplateStore.readiness()
 
@@ -147,33 +150,39 @@ class DraftVisionEngine(
                                     portraitMatcher.normalFingerprints(bitmap)
                             }
                         }.getOrElse { emptyList() }
+                        val portraitTemplateDomain = PortraitTemplateDomainPolicy.forFrame(
+                            matchMode = matchMode.effective,
+                            subphase = modeVisuals.subphase
+                        )
+                        val portraitMatches = portraitMatcher.matchSlots(
+                            slotFingerprints,
+                            portraitTemplateDomain
+                        )
                         val portraitCandidates = when (matchMode.effective) {
                             MatchMode.AUTO -> emptyList()
                             MatchMode.NORMAL_BLIND -> NormalPortraitCandidateFactory.create(
-                                matches = portraitMatcher.matchSlots(slotFingerprints),
+                                matches = portraitMatches,
                                 geometry = NormalSelectionGeometry.forFrame(
                                     ocrBitmap.width,
                                     ocrBitmap.height
                                 )
                             )
-                            MatchMode.RANKED_DRAFT -> portraitMatcher
-                                .matchSlots(slotFingerprints)
-                                .map {
-                                    val slotStatus = when (it.side) {
-                                        TeamSide.ALLY -> modeVisuals.board.allySlots
-                                        TeamSide.ENEMY -> modeVisuals.board.enemySlots
-                                        TeamSide.UNKNOWN -> emptyList()
-                                    }.firstOrNull { slot -> slot.index == it.slotIndex }?.status
-                                    PositionedHeroCandidate(
-                                        heroName = it.heroName,
-                                        confidence = it.confidence,
-                                        centerX = -1,
-                                        centerY = -1,
-                                        source = CandidateSource.PORTRAIT,
-                                        sideHint = it.side,
-                                        rankedSlotStatus = slotStatus
-                                    )
-                                }
+                            MatchMode.RANKED_DRAFT -> portraitMatches.map {
+                                val slotStatus = when (it.side) {
+                                    TeamSide.ALLY -> modeVisuals.board.allySlots
+                                    TeamSide.ENEMY -> modeVisuals.board.enemySlots
+                                    TeamSide.UNKNOWN -> emptyList()
+                                }.firstOrNull { slot -> slot.index == it.slotIndex }?.status
+                                PositionedHeroCandidate(
+                                    heroName = it.heroName,
+                                    confidence = it.confidence,
+                                    centerX = -1,
+                                    centerY = -1,
+                                    source = CandidateSource.PORTRAIT,
+                                    sideHint = it.side,
+                                    rankedSlotStatus = slotStatus
+                                )
+                            }
                         }
                         val observations = HeroCandidateRouter.route(
                             candidates = ocrCandidates + portraitCandidates,
@@ -188,7 +197,7 @@ class DraftVisionEngine(
                         ) {
                             loadingEvidenceExtractor.extract(
                                 lines = textLines,
-                                portraitMatches = portraitMatcher.matchSlots(slotFingerprints),
+                                portraitMatches = portraitMatches,
                                 frameWidth = ocrBitmap.width,
                                 frameHeight = ocrBitmap.height,
                                 configuredPlayerName = playerName
