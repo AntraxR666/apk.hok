@@ -5,6 +5,7 @@ data class NormalSelectionGeometry(
     val selectedHero: PixelRect,
     val alliedColumn: PixelRect,
     val allyRows: List<PixelRect>,
+    val allyPortraits: List<PixelRect>,
     val confirmAction: PixelRect
 ) {
     companion object {
@@ -19,6 +20,13 @@ data class NormalSelectionGeometry(
             NormalizedRect(0.76, 0.552083, 0.97, 0.746528),
             NormalizedRect(0.76, 0.746528, 0.97, 0.88)
         )
+        private val allyPortraitEnvelopes = listOf(
+            NormalizedRect(0.775, 0.015, 0.825, 0.125),
+            NormalizedRect(0.775, 0.198, 0.825, 0.326),
+            NormalizedRect(0.775, 0.396, 0.825, 0.517),
+            NormalizedRect(0.775, 0.590, 0.825, 0.708),
+            NormalizedRect(0.775, 0.785, 0.825, 0.910)
+        )
 
         fun forFrame(width: Int, height: Int): NormalSelectionGeometry {
             require(width > 0 && height > 0)
@@ -31,6 +39,7 @@ data class NormalSelectionGeometry(
                 selectedHero = selectedHeroEnvelope.toPixelRect(width, height),
                 alliedColumn = alliedColumnEnvelope.toPixelRect(width, height),
                 allyRows = allyRowEnvelopes.map { it.toPixelRect(width, height) },
+                allyPortraits = allyPortraitEnvelopes.map { it.toPixelRect(width, height) },
                 confirmAction = confirmActionEnvelope.toPixelRect(width, height)
             )
         }

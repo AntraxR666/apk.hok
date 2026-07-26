@@ -20,13 +20,49 @@ class NormalSelectionIsolationTest {
     }
 
     @Test
-    fun normalAllyRowThreeMapsOnlyToAllySlotThree() {
+    fun fixtureShapedPortraitCandidatesMapToAllFiveAllySlots() {
+        val centers = listOf(20, 75, 131, 187, 244)
+
+        val classified = centers.mapIndexed { index, centerY ->
+            classifier.classify(
+                portraitCandidate("Hero ${index + 1}", centerX = 512, centerY = centerY)
+            )
+        }
+
+        assertEquals((1..5).toList(), classified.map { it?.slotIndex })
+        assertTrue(classified.all { it?.side == TeamSide.ALLY })
+    }
+
+    @Test
+    fun matchedNormalPortraitsPreserveSlotCoordinatesBeforeRouting() {
+        val geometry = NormalSelectionGeometry.forFrame(width, height)
+        val candidates = NormalPortraitCandidateFactory.create(
+            matches = (1..5).map { slot ->
+                SlotHeroMatch(
+                    heroName = "Hero $slot",
+                    side = TeamSide.ALLY,
+                    slotIndex = slot,
+                    confidence = 0.90 + slot / 100.0
+                )
+            },
+            geometry = geometry
+        )
+
+        assertEquals(listOf(20, 75, 131, 187, 244), candidates.map { it.centerY })
+        assertTrue(candidates.all { it.source == CandidateSource.PORTRAIT })
+        assertEquals(
+            (1..5).toList(),
+            candidates.map { classifier.classify(it)?.slotIndex }
+        )
+    }
+
+    @Test
+    fun usernameOcrInNormalAllyRowCannotBecomeHeroIdentity() {
         val classified = classifier.classify(
             ocrCandidate("Angela", centerX = 550, centerY = 131)
         )
 
-        assertEquals(TeamSide.ALLY, classified?.side)
-        assertEquals(3, classified?.slotIndex)
+        assertNull(classified)
     }
 
     @Test
@@ -34,11 +70,11 @@ class NormalSelectionIsolationTest {
         val allFixtureCandidates = listOf(
             ocrCandidate("Angela", 80, 120),
             ocrCandidate("Angela", 320, 120),
-            ocrCandidate("Angela", 550, 22),
-            ocrCandidate("Lam", 550, 74),
-            ocrCandidate("Liang", 550, 131),
-            ocrCandidate("Dun", 550, 187),
-            ocrCandidate("Wukong", 550, 243),
+            portraitCandidate("Angela", 512, 20),
+            portraitCandidate("Lam", 512, 75),
+            portraitCandidate("Liang", 512, 131),
+            portraitCandidate("Dun", 512, 187),
+            portraitCandidate("Wukong", 512, 244),
             ocrCandidate("Hou Yi", 630, 131)
         )
 
@@ -80,7 +116,7 @@ class NormalSelectionIsolationTest {
             candidates = listOf(
                 ocrCandidate("Angela", 80, 120),
                 ocrCandidate("Lam", 320, 120),
-                ocrCandidate("Liang", 550, 131)
+                portraitCandidate("Liang", 512, 131)
             ),
             matchMode = MatchModeState(detected = MatchMode.NORMAL_BLIND),
             frameWidth = width,
@@ -123,5 +159,18 @@ class NormalSelectionIsolationTest {
         centerX = centerX,
         centerY = centerY,
         source = CandidateSource.OCR
+    )
+
+    private fun portraitCandidate(
+        heroName: String,
+        centerX: Int,
+        centerY: Int
+    ): PositionedHeroCandidate = PositionedHeroCandidate(
+        heroName = heroName,
+        confidence = 0.94,
+        centerX = centerX,
+        centerY = centerY,
+        source = CandidateSource.PORTRAIT,
+        sideHint = TeamSide.ALLY
     )
 }

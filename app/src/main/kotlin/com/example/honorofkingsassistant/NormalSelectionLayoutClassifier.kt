@@ -21,16 +21,39 @@ data class SlottedHeroCandidate(
     val slotIndex: Int
 )
 
+object NormalPortraitCandidateFactory {
+    fun create(
+        matches: List<SlotHeroMatch>,
+        geometry: NormalSelectionGeometry
+    ): List<PositionedHeroCandidate> = matches.mapNotNull { match ->
+        if (match.side != TeamSide.ALLY) return@mapNotNull null
+        val region = geometry.allyPortraits.getOrNull(match.slotIndex - 1)
+            ?: return@mapNotNull null
+        PositionedHeroCandidate(
+            heroName = match.heroName,
+            confidence = match.confidence,
+            centerX = (region.left + region.right) / 2,
+            centerY = (region.top + region.bottom) / 2,
+            source = CandidateSource.PORTRAIT,
+            sideHint = TeamSide.ALLY
+        )
+    }
+}
+
 class NormalSelectionLayoutClassifier private constructor(
     private val geometry: NormalSelectionGeometry
 ) {
     fun classify(candidate: PositionedHeroCandidate): SlottedHeroCandidate? {
-        if (candidate.source != CandidateSource.OCR) return null
-        val rowIndex = geometry.allyRows.indexOfFirst { row ->
-            candidate.centerX >= row.left &&
-                candidate.centerX < row.right &&
-                candidate.centerY >= row.top &&
-                candidate.centerY < row.bottom
+        if (candidate.source != CandidateSource.PORTRAIT ||
+            candidate.sideHint != TeamSide.ALLY
+        ) {
+            return null
+        }
+        val rowIndex = geometry.allyPortraits.indexOfFirst { portrait ->
+            candidate.centerX >= portrait.left &&
+                candidate.centerX < portrait.right &&
+                candidate.centerY >= portrait.top &&
+                candidate.centerY < portrait.bottom
         }
         if (rowIndex < 0) return null
         return SlottedHeroCandidate(

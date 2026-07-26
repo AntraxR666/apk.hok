@@ -110,8 +110,9 @@ class VideoCalibrationTest {
             assertEquals(entry.getString("sha256"), bytes.sha256())
         }
 
-        assertTrue(manifest.getJSONObject("normalized_envelopes")
-            .getJSONArray("ally_rows").length() == 5)
+        val envelopes = manifest.getJSONObject("normalized_envelopes")
+        assertTrue(envelopes.getJSONArray("ally_rows").length() == 5)
+        assertTrue(envelopes.getJSONArray("ally_portraits").length() == 5)
     }
 
     private fun repositoryFile(relativePath: String): File {

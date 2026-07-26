@@ -51,6 +51,11 @@ class DraftVisionEngine(
 
     fun matchModeState(): MatchModeState = matchModeResolver.current()
 
+    fun resetMatchModeDetection(): MatchModeState {
+        matchModeResolver.reset()
+        return matchModeResolver.current()
+    }
+
     fun learnPortrait(heroName: String, slot: SlotPortraitFingerprint): Boolean =
         portraitMatcher.learn(heroName, slot)
 
@@ -59,7 +64,11 @@ class DraftVisionEngine(
     fun process(
         bitmap: Bitmap,
         onResult: (DraftVisionResult) -> Unit,
-        onError: (Throwable) -> Unit
+        onError: (Throwable) -> Unit,
+        runIfCurrent: ((() -> Unit) -> Boolean) = { action ->
+            action()
+            true
+        }
     ): Boolean {
         if (!processing.compareAndSet(false, true)) {
             diagnosticsTracker.onDroppedFrame()
@@ -71,7 +80,7 @@ class DraftVisionEngine(
             .getOrElse { error ->
                 processing.set(false)
                 if (!bitmap.isRecycled) bitmap.recycle()
-                onError(error)
+                runIfCurrent { onError(error) }
                 return true
             }
         val ocrBitmap = prepared.bitmap
@@ -80,77 +89,99 @@ class DraftVisionEngine(
         return runCatching {
             recognizer.process(image)
                 .addOnSuccessListener(callbackExecutor) { text ->
-                    val latencyMs = (System.nanoTime() - startedAtNanos) / 1_000_000L
-                    val diagnostics = diagnosticsTracker.onProcessedFrame(
-                        latencyMs = latencyMs,
-                        captureWidth = bitmap.width,
-                        captureHeight = bitmap.height,
-                        ocrWidth = ocrBitmap.width,
-                        ocrHeight = ocrBitmap.height
-                    )
-                    val textLines = extractTextLines(text)
-                    val matchMode = matchModeResolver.observe(
-                        NormalSelectionEvidenceDetector.detect(
-                            lines = textLines,
+                    runIfCurrent {
+                        val latencyMs = (System.nanoTime() - startedAtNanos) / 1_000_000L
+                        val diagnostics = diagnosticsTracker.onProcessedFrame(
+                            latencyMs = latencyMs,
+                            captureWidth = bitmap.width,
+                            captureHeight = bitmap.height,
+                            ocrWidth = ocrBitmap.width,
+                            ocrHeight = ocrBitmap.height
+                        )
+                        val textLines = extractTextLines(text)
+                        val matchMode = matchModeResolver.observe(
+                            NormalSelectionEvidenceDetector.detect(
+                                lines = textLines,
+                                frameWidth = ocrBitmap.width,
+                                frameHeight = ocrBitmap.height,
+                                enemyOnRight = enemyOnRight
+                            )
+                        )
+                        val ocrCandidates = extractOcrCandidates(text)
+                        val slotFingerprints = runCatching {
+                            when (matchMode.effective) {
+                                MatchMode.AUTO -> emptyList()
+                                MatchMode.RANKED_DRAFT ->
+                                    portraitMatcher.fingerprints(bitmap, enemyOnRight)
+                                MatchMode.NORMAL_BLIND ->
+                                    portraitMatcher.normalFingerprints(bitmap)
+                            }
+                        }.getOrElse { emptyList() }
+                        val portraitCandidates = when (matchMode.effective) {
+                            MatchMode.AUTO -> emptyList()
+                            MatchMode.NORMAL_BLIND -> NormalPortraitCandidateFactory.create(
+                                matches = portraitMatcher.matchSlots(slotFingerprints),
+                                geometry = NormalSelectionGeometry.forFrame(
+                                    ocrBitmap.width,
+                                    ocrBitmap.height
+                                )
+                            )
+                            MatchMode.RANKED_DRAFT -> portraitMatcher.match(slotFingerprints).map {
+                                PositionedHeroCandidate(
+                                    heroName = it.heroName,
+                                    confidence = it.confidence,
+                                    centerX = -1,
+                                    centerY = -1,
+                                    source = CandidateSource.PORTRAIT,
+                                    sideHint = it.side
+                                )
+                            }
+                        }
+                        val observations = HeroCandidateRouter.route(
+                            candidates = ocrCandidates + portraitCandidates,
+                            matchMode = matchMode,
                             frameWidth = ocrBitmap.width,
                             frameHeight = ocrBitmap.height,
                             enemyOnRight = enemyOnRight
                         )
-                    )
-                    val ocrCandidates = extractOcrCandidates(text)
-                    val slotFingerprints = if (matchMode.effective == MatchMode.RANKED_DRAFT) {
-                        runCatching {
-                            portraitMatcher.fingerprints(bitmap, enemyOnRight)
-                        }.getOrElse { emptyList() }
-                    } else {
-                        emptyList()
-                    }
-                    val portraitCandidates = portraitMatcher.match(slotFingerprints).map {
-                        PositionedHeroCandidate(
-                            heroName = it.heroName,
-                            confidence = it.confidence,
-                            centerX = -1,
-                            centerY = -1,
-                            source = CandidateSource.PORTRAIT,
-                            sideHint = it.side
+                        val modeVisuals = resolveModeVisuals(bitmap, text, matchMode)
+                        onResult(
+                            DraftVisionResult(
+                                observations = observations,
+                                rawText = text.text,
+                                board = modeVisuals.board,
+                                screenMode = modeVisuals.board.mode,
+                                matchMode = matchMode,
+                                subphase = modeVisuals.subphase,
+                                playerSlot = if (
+                                    matchMode.effective == MatchMode.RANKED_DRAFT
+                                ) {
+                                    detectPlayerSlot(
+                                        text,
+                                        ocrBitmap.width,
+                                        ocrBitmap.height
+                                    )
+                                } else {
+                                    null
+                                },
+                                slotFingerprints = slotFingerprints,
+                                diagnostics = diagnostics
+                            )
                         )
                     }
-                    val observations = HeroCandidateRouter.route(
-                        candidates = ocrCandidates + portraitCandidates,
-                        matchMode = matchMode,
-                        frameWidth = ocrBitmap.width,
-                        frameHeight = ocrBitmap.height,
-                        enemyOnRight = enemyOnRight
-                    )
-                    val modeVisuals = resolveModeVisuals(bitmap, text, matchMode)
-                    onResult(
-                        DraftVisionResult(
-                            observations = observations,
-                            rawText = text.text,
-                            board = modeVisuals.board,
-                            screenMode = modeVisuals.board.mode,
-                            matchMode = matchMode,
-                            subphase = modeVisuals.subphase,
-                            playerSlot = if (matchMode.effective == MatchMode.RANKED_DRAFT) {
-                                detectPlayerSlot(text, ocrBitmap.width, ocrBitmap.height)
-                            } else {
-                                null
-                            },
-                            slotFingerprints = slotFingerprints,
-                            diagnostics = diagnostics
-                        )
-                    )
                 }
                 .addOnFailureListener(callbackExecutor) { error ->
-                    val latencyMs = (System.nanoTime() - startedAtNanos) / 1_000_000L
-                    diagnosticsTracker.onProcessedFrame(
-                        latencyMs = latencyMs,
-                        captureWidth = bitmap.width,
-                        captureHeight = bitmap.height,
-                        ocrWidth = ocrBitmap.width,
-                        ocrHeight = ocrBitmap.height
-                    )
-                    onError(error)
+                    runIfCurrent {
+                        val latencyMs = (System.nanoTime() - startedAtNanos) / 1_000_000L
+                        diagnosticsTracker.onProcessedFrame(
+                            latencyMs = latencyMs,
+                            captureWidth = bitmap.width,
+                            captureHeight = bitmap.height,
+                            ocrWidth = ocrBitmap.width,
+                            ocrHeight = ocrBitmap.height
+                        )
+                        onError(error)
+                    }
                 }
                 .addOnCompleteListener(callbackExecutor) {
                     prepared.release()
@@ -162,7 +193,7 @@ class DraftVisionEngine(
             prepared.release()
             processing.set(false)
             if (!bitmap.isRecycled) bitmap.recycle()
-            onError(error)
+            runIfCurrent { onError(error) }
             true
         }
     }

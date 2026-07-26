@@ -89,6 +89,35 @@ class NormalModeRoutingTest {
     }
 
     @Test
+    fun normalRouterUsesPortraitIdentityAndRejectsHeroLikeUsernameOcr() {
+        val observations = HeroCandidateRouter.route(
+            candidates = listOf(
+                PositionedHeroCandidate(
+                    heroName = "Angela",
+                    confidence = 0.96,
+                    centerX = 512,
+                    centerY = 131,
+                    source = CandidateSource.PORTRAIT,
+                    sideHint = TeamSide.ALLY
+                ),
+                PositionedHeroCandidate(
+                    heroName = "Wukong",
+                    confidence = 1.0,
+                    centerX = 550,
+                    centerY = 187,
+                    source = CandidateSource.OCR
+                )
+            ),
+            matchMode = MatchModeState(detected = MatchMode.NORMAL_BLIND),
+            frameWidth = 640,
+            frameHeight = 288,
+            enemyOnRight = true
+        )
+
+        assertEquals(listOf(HeroObservation("Angela", TeamSide.ALLY, 0.96)), observations)
+    }
+
+    @Test
     fun uiStateKeepsInputAndPreferenceSeparateFromEffectiveMode() {
         val state = AssistantUiState(
             inputMode = InputMode.MANUAL,
@@ -102,5 +131,34 @@ class NormalModeRoutingTest {
         assertEquals(MatchMode.RANKED_DRAFT, state.matchMode.preference)
         assertEquals(MatchMode.NORMAL_BLIND, state.matchMode.detected)
         assertEquals(MatchMode.RANKED_DRAFT, state.matchMode.effective)
+    }
+
+    @Test
+    fun staleVisionGenerationCannotOverrideManualModeOrRepopulateResetState() {
+        val coordinator = DraftSessionCoordinator()
+        val staleGeneration = coordinator.captureGeneration()
+        var mode = MatchModeState()
+        var snapshot = DraftSnapshot(
+            allies = listOf(ConfirmedHero("Angela", TeamSide.ALLY, 0.98)),
+            enemies = emptyList(),
+            unknown = emptyList()
+        )
+
+        coordinator.advanceGeneration {
+            mode = MatchModeState(preference = MatchMode.NORMAL_BLIND)
+            snapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
+        }
+        val staleApplied = coordinator.runIfCurrent(staleGeneration) {
+            mode = MatchModeState(detected = MatchMode.RANKED_DRAFT)
+            snapshot = DraftSnapshot(
+                allies = emptyList(),
+                enemies = listOf(ConfirmedHero("Lam", TeamSide.ENEMY, 0.99)),
+                unknown = emptyList()
+            )
+        }
+
+        assertFalse(staleApplied)
+        assertEquals(MatchMode.NORMAL_BLIND, mode.effective)
+        assertTrue(snapshot.allConfirmedNames.isEmpty())
     }
 }

@@ -2,6 +2,13 @@ package com.example.honorofkingsassistant
 
 import android.graphics.Bitmap
 
+data class SlotHeroMatch(
+    val heroName: String,
+    val side: TeamSide,
+    val slotIndex: Int,
+    val confidence: Double
+)
+
 class HeroPortraitMatcher(
     private val catalog: CounterCatalog,
     private val store: PortraitTemplateStore
@@ -31,7 +38,30 @@ class HeroPortraitMatcher(
         return output
     }
 
-    fun match(fingerprints: List<SlotPortraitFingerprint>): List<HeroObservation> {
+    fun normalFingerprints(bitmap: Bitmap): List<SlotPortraitFingerprint> =
+        NormalSelectionGeometry.forFrame(bitmap.width, bitmap.height)
+            .allyPortraits
+            .mapIndexedNotNull { index, region ->
+                val normalized = normalizedPixels(bitmap, region)
+                val visualConfidence = visualConfidence(normalized)
+                if (visualConfidence < MIN_VISUAL_CONFIDENCE) {
+                    null
+                } else {
+                    SlotPortraitFingerprint(
+                        side = TeamSide.ALLY,
+                        slotIndex = index + 1,
+                        fingerprint = PortraitFingerprint.fromArgb64(normalized),
+                        visualConfidence = visualConfidence
+                    )
+                }
+            }
+
+    fun match(fingerprints: List<SlotPortraitFingerprint>): List<HeroObservation> =
+        matchSlots(fingerprints).map { match ->
+            HeroObservation(match.heroName, match.side, match.confidence)
+        }
+
+    fun matchSlots(fingerprints: List<SlotPortraitFingerprint>): List<SlotHeroMatch> {
         val templates = store.templates()
         if (templates.isEmpty()) return emptyList()
         return fingerprints.mapNotNull slotLoop@ { slot ->
@@ -48,7 +78,12 @@ class HeroPortraitMatcher(
                 )
             }
             val best = PortraitMatchSelector.select(candidates) ?: return@slotLoop null
-            HeroObservation(best.heroName, slot.side, best.confidence)
+            SlotHeroMatch(
+                heroName = best.heroName,
+                side = slot.side,
+                slotIndex = slot.slotIndex,
+                confidence = best.confidence
+            )
         }
     }
 
@@ -57,6 +92,10 @@ class HeroPortraitMatcher(
 
     private fun normalizedPixels(bitmap: Bitmap, region: NormalizedRect): IntArray {
         val rect = region.toPixelRect(bitmap.width, bitmap.height)
+        return normalizedPixels(bitmap, rect)
+    }
+
+    private fun normalizedPixels(bitmap: Bitmap, rect: PixelRect): IntArray {
         val crop = Bitmap.createBitmap(bitmap, rect.left, rect.top, rect.width, rect.height)
         val scaled = Bitmap.createScaledBitmap(crop, 8, 8, true)
         val pixels = IntArray(64)

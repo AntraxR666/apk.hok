@@ -22,10 +22,12 @@ class MatchModeResolverTest {
         assertEquals(PixelRect(1778, 43, 2270, 950), geometry.alliedColumn)
         assertEquals(PixelRect(1872, 842, 2293, 1058), geometry.confirmAction)
         assertEquals(5, geometry.allyRows.size)
+        assertEquals(5, geometry.allyPortraits.size)
         assertTrue(geometry.allyRows.zipWithNext().all { (a, b) -> a.bottom <= b.top })
 
         val captureGeometry = NormalSelectionGeometry.forFrame(1170, 540)
         assertEquals(5, captureGeometry.allyRows.size)
+        assertEquals(5, captureGeometry.allyPortraits.size)
         assertTrue(captureGeometry.allRects().all { rect ->
             rect.left >= 0 && rect.top >= 0 &&
                 rect.right <= 1170 && rect.bottom <= 540 &&
@@ -125,6 +127,65 @@ class MatchModeResolverTest {
         assertEquals(MatchMode.AUTO, AssistantPreferences.parseMatchMode("broken"))
     }
 
+    @Test
+    fun successiveDraftSessionsResetModeHeroBoardAndPlayerSlotState() {
+        val modeResolver = MatchModeResolver(requiredFrames = 1)
+        val tracker = TemporalDraftTracker(requiredHits = 1, historySize = 2)
+        val boardStabilizer = DraftBoardTemporalStabilizer(requiredConfirmationFrames = 1)
+        val playerSlotResolver = PlayerSlotResolver(requiredHits = 1, maxMisses = 2)
+        val coordinator = DraftSessionCoordinator()
+
+        coordinator.beginDraftSession(
+            resetMatchMode = {
+                modeResolver.reset()
+                modeResolver.current()
+            },
+            tracker = tracker,
+            boardStabilizer = boardStabilizer,
+            playerSlotResolver = playerSlotResolver,
+            manualPlayerSlotIndex = null
+        )
+        modeResolver.observe(normalEvidence)
+        tracker.observe(listOf(HeroObservation("Angela", TeamSide.ALLY, 0.98)))
+        boardStabilizer.stabilize(
+            DraftBoardState.empty(ScreenMode.DRAFT).copy(
+                allySlots = (1..5).map { index ->
+                    DraftSlotState(
+                        TeamSide.ALLY,
+                        index,
+                        DraftSlotStatus.CONFIRMED,
+                        0.98
+                    )
+                }
+            )
+        )
+        playerSlotResolver.resolve(PlayerSlotDetection(4, TeamSide.ALLY, 1.0), null)
+
+        val secondSession = coordinator.beginDraftSession(
+            resetMatchMode = {
+                modeResolver.reset()
+                modeResolver.current()
+            },
+            tracker = tracker,
+            boardStabilizer = boardStabilizer,
+            playerSlotResolver = playerSlotResolver,
+            manualPlayerSlotIndex = null
+        )
+
+        assertEquals(MatchMode.AUTO, secondSession.matchMode.detected)
+        assertEquals(MatchMode.AUTO, secondSession.matchMode.effective)
+        assertTrue(secondSession.snapshot.allConfirmedNames.isEmpty())
+        assertEquals(0, secondSession.board.totalConfirmedCount)
+        assertEquals(null, secondSession.playerSlot)
+        assertTrue(tracker.observe(emptyList()).allConfirmedNames.isEmpty())
+        assertEquals(
+            0,
+            boardStabilizer.stabilize(DraftBoardState.empty(ScreenMode.DRAFT))
+                .totalConfirmedCount
+        )
+        assertEquals(null, playerSlotResolver.resolve(null, null))
+    }
+
     private fun NormalSelectionGeometry.allRects(): List<PixelRect> =
-        listOf(heroCatalog, selectedHero, alliedColumn, confirmAction) + allyRows
+        listOf(heroCatalog, selectedHero, alliedColumn, confirmAction) + allyRows + allyPortraits
 }

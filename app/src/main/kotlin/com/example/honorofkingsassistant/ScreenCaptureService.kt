@@ -31,6 +31,7 @@ class ScreenCaptureService : Service() {
     private lateinit var visionEngine: DraftVisionEngine
     private lateinit var boardStabilizer: DraftBoardTemporalStabilizer
     private lateinit var playerSlotResolver: PlayerSlotResolver
+    private val sessionCoordinator = DraftSessionCoordinator()
 
     private var mediaProjection: MediaProjection? = null
     private var virtualDisplay: VirtualDisplay? = null
@@ -113,11 +114,23 @@ class ScreenCaptureService : Service() {
                 val requested = intent.getStringExtra(EXTRA_INPUT_MODE)
                     ?.let { runCatching { InputMode.valueOf(it) }.getOrNull() }
                     ?: return START_NOT_STICKY
-                inputMode = requested
-                AssistantPreferences.setInputMode(this, inputMode)
-                tracker.reset()
-                lastVisionSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
-                lastSlotFingerprints = emptyList()
+                sessionCoordinator.advanceGeneration {
+                    inputMode = requested
+                    AssistantPreferences.setInputMode(this, inputMode)
+                    tracker.reset()
+                    boardStabilizer.reset()
+                    playerSlotResolver.reset()
+                    lastVisionSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
+                    lastBoard = DraftBoardState.empty(
+                        if (matchMode.effective == MatchMode.AUTO) {
+                            ScreenMode.UNKNOWN
+                        } else {
+                            ScreenMode.DRAFT
+                        }
+                    )
+                    lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
+                    lastSlotFingerprints = emptyList()
+                }
                 publishCurrent(
                     if (inputMode == InputMode.MANUAL) {
                         "Entrada manual activa; el escaneo no añadirá héroes"
@@ -131,23 +144,25 @@ class ScreenCaptureService : Service() {
                 val requested = intent.getStringExtra(EXTRA_MATCH_MODE)
                     ?.let { runCatching { MatchMode.valueOf(it) }.getOrNull() }
                     ?: return START_NOT_STICKY
-                AssistantPreferences.setMatchMode(this, requested)
-                matchMode = visionEngine.setMatchModePreference(requested)
-                tracker.reset()
-                boardStabilizer.reset()
-                playerSlotResolver.reset()
-                lastVisionSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
-                lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
-                lastSlotFingerprints = emptyList()
-                lastBoard = DraftBoardState.empty(
-                    if (matchMode.effective == MatchMode.AUTO) {
-                        ScreenMode.UNKNOWN
-                    } else {
-                        ScreenMode.DRAFT
-                    }
-                )
-                lastScreenMode = lastBoard.mode
-                lastSubphase = DraftSubphase.UNKNOWN
+                sessionCoordinator.advanceGeneration {
+                    AssistantPreferences.setMatchMode(this, requested)
+                    matchMode = visionEngine.setMatchModePreference(requested)
+                    tracker.reset()
+                    boardStabilizer.reset()
+                    playerSlotResolver.reset()
+                    lastVisionSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
+                    lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
+                    lastSlotFingerprints = emptyList()
+                    lastBoard = DraftBoardState.empty(
+                        if (matchMode.effective == MatchMode.AUTO) {
+                            ScreenMode.UNKNOWN
+                        } else {
+                            ScreenMode.DRAFT
+                        }
+                    )
+                    lastScreenMode = lastBoard.mode
+                    lastSubphase = DraftSubphase.UNKNOWN
+                }
                 publishCurrent(
                     when (requested) {
                         MatchMode.AUTO -> "Modo de partida automático; esperando evidencia decisiva"
@@ -158,17 +173,19 @@ class ScreenCaptureService : Service() {
                 return START_NOT_STICKY
             }
             ACTION_SWAP_SIDES -> {
-                enemyOnRight = !enemyOnRight
-                visionEngine.setEnemyOnRight(enemyOnRight)
-                tracker.reset()
-                boardStabilizer.reset()
-                playerSlotResolver.reset()
-                lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
-                lastVisionSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
-                lastBoard = DraftBoardState.empty(ScreenMode.DRAFT)
-                lastScreenMode = ScreenMode.DRAFT
-                lastSubphase = DraftSubphase.UNKNOWN
-                suggestedStage = null
+                sessionCoordinator.advanceGeneration {
+                    enemyOnRight = !enemyOnRight
+                    visionEngine.setEnemyOnRight(enemyOnRight)
+                    tracker.reset()
+                    boardStabilizer.reset()
+                    playerSlotResolver.reset()
+                    lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
+                    lastVisionSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
+                    lastBoard = DraftBoardState.empty(ScreenMode.DRAFT)
+                    lastScreenMode = ScreenMode.DRAFT
+                    lastSubphase = DraftSubphase.UNKNOWN
+                    suggestedStage = null
+                }
                 publishCurrent("Lados intercambiados; esperando confirmaciones nuevas")
                 return START_NOT_STICKY
             }
@@ -270,6 +287,12 @@ class ScreenCaptureService : Service() {
     }
 
     private fun setStage(stage: AssistantStage) {
+        val previousStage = selectedStage
+        when {
+            stage == AssistantStage.DRAFT && previousStage != AssistantStage.DRAFT ->
+                resetForNewDraftSession()
+            stage != previousStage -> sessionCoordinator.advanceGeneration { }
+        }
         selectedStage = stage
         suggestedStage = null
         AssistantPreferences.setAssistantStage(this, stage)
@@ -291,6 +314,28 @@ class ScreenCaptureService : Service() {
             }
         }
         updateNotification()
+    }
+
+    private fun resetForNewDraftSession() {
+        val reset = sessionCoordinator.beginDraftSession(
+            resetMatchMode = visionEngine::resetMatchModeDetection,
+            tracker = tracker,
+            boardStabilizer = boardStabilizer,
+            playerSlotResolver = playerSlotResolver,
+            manualPlayerSlotIndex = manualPlayerSlotIndex
+        )
+        matchMode = reset.matchMode
+        lastVisionSnapshot = reset.snapshot
+        lastBoard = reset.board
+        lastPlayerSlot = reset.playerSlot
+        lastScreenMode = ScreenMode.UNKNOWN
+        lastSubphase = DraftSubphase.UNKNOWN
+        lastSlotFingerprints = emptyList()
+        manualAllies.clear()
+        manualEnemies.clear()
+        playerPickOverride = PlayerPickOverride.AUTO
+        AssistantPreferences.setPlayerPickOverride(this, playerPickOverride)
+        lastFrameAt = 0L
     }
 
     @Suppress("DEPRECATION")
@@ -408,6 +453,7 @@ class ScreenCaptureService : Service() {
             image.close()
         } ?: return
 
+        val analysisGeneration = sessionCoordinator.captureGeneration()
         val accepted = visionEngine.process(
             bitmap = bitmap,
             onResult = { result ->
@@ -478,6 +524,9 @@ class ScreenCaptureService : Service() {
                 lastVisionDiagnostics = visionEngine.diagnostics()
                 Log.w(TAG, "OCR falló en un frame", error)
                 publishCurrent("OCR temporalmente sin resultado")
+            },
+            runIfCurrent = { action ->
+                sessionCoordinator.runIfCurrent(analysisGeneration, action)
             }
         )
         if (!accepted) {
@@ -696,6 +745,7 @@ class ScreenCaptureService : Service() {
     }
 
     override fun onDestroy() {
+        sessionCoordinator.advanceGeneration { }
         selectedStage = AssistantStage.PAUSED
         AssistantPreferences.setAssistantStage(this, selectedStage)
         AssistantSessionBus.publish(

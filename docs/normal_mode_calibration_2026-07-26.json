@@ -53,10 +53,24 @@
       [0.76, 0.355903, 0.97, 0.552083],
       [0.76, 0.552083, 0.97, 0.746528],
       [0.76, 0.746528, 0.97, 0.88]
+    ],
+    "ally_portraits": [
+      [0.775, 0.015, 0.825, 0.125],
+      [0.775, 0.198, 0.825, 0.326],
+      [0.775, 0.396, 0.825, 0.517],
+      [0.775, 0.590, 0.825, 0.708],
+      [0.775, 0.785, 0.825, 0.910]
     ]
   },
   "measurement": {
     "row_center_pixels_at_640x288": [22, 74, 131, 187, 243],
+    "portrait_rectangles_at_640x288": [
+      [496, 4, 528, 36],
+      [496, 57, 528, 94],
+      [496, 114, 528, 149],
+      [496, 170, 528, 204],
+      [496, 226, 528, 262]
+    ],
     "row_boundaries": "midpoints between measured row centers, clipped to the allied-column top and bottom",
     "rounding": "reuse NormalizedRect.toPixelRect nearest-integer rounding and clamp to frame bounds"
   }
