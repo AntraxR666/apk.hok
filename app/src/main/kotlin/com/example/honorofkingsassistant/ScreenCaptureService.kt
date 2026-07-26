@@ -22,6 +22,9 @@ import android.os.SystemClock
 import android.util.Log
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
 class ScreenCaptureService : Service() {
     private lateinit var counterEngine: CounterEngine
@@ -29,6 +32,8 @@ class ScreenCaptureService : Service() {
     private lateinit var strategyEngine: StrategyEngine
     private lateinit var tracker: TemporalDraftTracker
     private lateinit var visionEngine: DraftVisionEngine
+    private lateinit var scoreboardAnalyzer: ScoreboardBitmapAnalyzer
+    private lateinit var scoreboardReconciler: ScoreboardReconciler
     private lateinit var boardStabilizer: DraftBoardTemporalStabilizer
     private lateinit var playerSlotResolver: PlayerSlotResolver
     private val sessionCoordinator = DraftSessionCoordinator()
@@ -62,6 +67,8 @@ class ScreenCaptureService : Service() {
     private var pendingLoadingConfirmation = false
     private var loadingConfirmationDeadlineMs = 0L
     private var loadingConfirmationReview = false
+    private val scoreboardScanCoordinator = ScoreboardScanCoordinator()
+    private var scoreboardRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     private var lastVisionDiagnostics = VisionDiagnostics()
     private val manualAllies = linkedSetOf<String>()
     private val manualEnemies = linkedSetOf<String>()
@@ -99,6 +106,8 @@ class ScreenCaptureService : Service() {
             initialMatchModePreference = matchModePreference,
             callbackExecutor = callbackExecutor
         )
+        scoreboardAnalyzer = ScoreboardBitmapAnalyzer(counterEngine.catalog)
+        scoreboardReconciler = ScoreboardReconciler(counterEngine.catalog)
         matchMode = visionEngine.matchModeState()
         lastRecognition = visionEngine.recognitionCalibration()
         createNotificationChannel()
@@ -305,10 +314,9 @@ class ScreenCaptureService : Service() {
                 return START_NOT_STICKY
             }
             ACTION_SCAN_SCOREBOARD -> {
-                restoreOverlayAfterOneShot()
-                publishCurrent(
-                    "Verificación de marcador preparada; abre el marcador y vuelve a pulsar cuando el analizador esté habilitado"
-                )
+                scoreboardScanCoordinator.arm()
+                forceNextFrame = true
+                publishCurrent("Marcador armado; capturando el próximo fotograma visible")
                 return START_NOT_STICKY
             }
         }
@@ -503,7 +511,8 @@ class ScreenCaptureService : Service() {
         val preparedFrame = prepareFrameAtCurrentGeneration(sessionCoordinator) {
             if (image == null) return@prepareFrameAtCurrentGeneration null
             val policy = AssistantStagePolicy.forStage(selectedStage)
-            if (!policy.shouldProcessFrames) {
+            val scoreboardArmed = scoreboardScanCoordinator.shouldCapture()
+            if (!policy.shouldProcessFrames && !scoreboardArmed) {
                 image.close()
                 return@prepareFrameAtCurrentGeneration null
             }
@@ -513,7 +522,7 @@ class ScreenCaptureService : Service() {
                 baseIntervalMs = policy.frameIntervalMs,
                 averageLatencyMs = visionEngine.diagnostics().averageLatencyMs
             )
-            if (!forceNextFrame && now - lastFrameAt < effectiveIntervalMs) {
+            if (!forceNextFrame && !scoreboardArmed && now - lastFrameAt < effectiveIntervalMs) {
                 image.close()
                 return@prepareFrameAtCurrentGeneration null
             }
@@ -530,6 +539,11 @@ class ScreenCaptureService : Service() {
             }
         } ?: return
         val bitmap = preparedFrame.value
+
+        if (scoreboardScanCoordinator.claimFrame(isEligible = true)) {
+            analyzeScoreboard(bitmap, preparedFrame.generation)
+            return
+        }
 
         val accepted = visionEngine.process(
             bitmap = bitmap,
@@ -656,6 +670,56 @@ class ScreenCaptureService : Service() {
             lastVisionDiagnostics = visionEngine.diagnostics()
             if (!bitmap.isRecycled) bitmap.recycle()
         }
+    }
+
+    private fun analyzeScoreboard(bitmap: Bitmap, generation: DraftFrameGeneration) {
+        val input = InputImage.fromBitmap(bitmap, 0)
+        scoreboardRecognizer.process(input)
+            .addOnSuccessListener { text ->
+                val handler = workerHandler
+                val complete: () -> Unit = {
+                    try {
+                        val applied = sessionCoordinator.runIfCurrent(generation) {
+                            val scoreboard = scoreboardAnalyzer.analyze(text, bitmap.width, bitmap.height)
+                            val result = scoreboardReconciler.reconcile(
+                                draft = lastVisionSnapshot,
+                                scoreboard = scoreboard,
+                                manualOverrides = manualAssignments
+                            )
+                            lastVisionSnapshot = result.snapshot
+                            scoreboardScanCoordinator.completeReview()
+                            restoreOverlayAfterOneShot(openManualEditor = true)
+                            publishCurrent(
+                                "Marcador verificado: ${result.appliedCorrections.size} correcciones" +
+                                    if (result.pendingConflicts.isNotEmpty()) {
+                                        " · ${result.pendingConflicts.size} conflictos para revisar"
+                                    } else {
+                                        " · revisa los slots si falta algún título"
+                                    }
+                            )
+                        }
+                        if (!applied) {
+                            scoreboardScanCoordinator.fail()
+                            restoreOverlayAfterOneShot()
+                        }
+                    } catch (error: Exception) {
+                        scoreboardScanCoordinator.fail()
+                        restoreOverlayAfterOneShot()
+                        publishCurrent("No se pudo verificar el marcador; abre el panel e inténtalo otra vez")
+                        Log.w(TAG, "Falló el análisis del marcador", error)
+                    } finally {
+                        if (!bitmap.isRecycled) bitmap.recycle()
+                    }
+                }
+                if (handler == null || !handler.post { complete() }) complete()
+            }
+            .addOnFailureListener { error ->
+                scoreboardScanCoordinator.fail()
+                restoreOverlayAfterOneShot()
+                if (!bitmap.isRecycled) bitmap.recycle()
+                publishCurrent("OCR del marcador sin resultado; vuelve a abrirlo e inténtalo")
+                Log.w(TAG, "OCR de marcador falló", error)
+            }
     }
 
     private fun ScreenMode.toDetectedScene(): DetectedScene = when (this) {
@@ -930,6 +994,7 @@ class ScreenCaptureService : Service() {
         virtualDisplay?.release()
         virtualDisplay = null
         imageReader?.close()
+        scoreboardRecognizer.close()
         imageReader = null
         captureSize = null
         captureDensityDpi = 0
