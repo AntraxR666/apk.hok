@@ -1,8 +1,8 @@
-# HoK Draft Assistant V5.5 Implementation Plan
+# HoK Draft Assistant 1.0 Personal Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a Huawei JKM-LX3-optimized V5.5 that recognizes verified Spanish hero titles, distinguishes ranked and normal selection, offers a usable translucent overlay, recovers both teams and current items from an explicit scoreboard scan, and recommends adaptive purchases fully offline.
+**Goal:** Build the first formal Huawei JKM-LX3-optimized 1.0 personal release that recognizes verified Spanish hero titles, distinguishes ranked and normal selection, offers a usable translucent overlay, recovers both teams and current items from an explicit scoreboard scan, and recommends adaptive purchases fully offline.
 
 **Architecture:** Keep capture and ML Kit OCR in `ScreenCaptureService`, but move identity, match-mode, scoreboard, reconciliation, and item scoring into pure Kotlin components with deterministic tests. The overlay only publishes user intent and renders immutable `AssistantUiState`; analyzers consume normalized geometry so the same logic works at `2340 × 1080` and the reduced `1170 × 540` capture size.
 
@@ -349,7 +349,7 @@ Expected: all PASS.
 
 ```powershell
 git add app/src/main/kotlin/com/example/honorofkingsassistant/OverlayService.kt app/src/main/res/values/strings.xml tools/test_overlay_contract.py tools/test_overlay_scroll_contract.py tools/test_overlay_v55_contract.py
-git commit -m "feat(overlay): add translucent scroll-safe V5.5 controls"
+git commit -m "feat(overlay): add translucent scroll-safe 1.0 controls"
 ```
 
 ### Task 5: Pure Scoreboard Geometry, Recognition Model, and Reconciliation
@@ -657,7 +657,7 @@ Expected: all PASS.
 
 ```powershell
 git add app/src/main/kotlin/com/example/honorofkingsassistant/AssistantSessionBus.kt app/src/main/kotlin/com/example/honorofkingsassistant/ScreenCaptureService.kt app/src/main/kotlin/com/example/honorofkingsassistant/OverlayService.kt app/src/main/kotlin/com/example/honorofkingsassistant/StrategyEngine.kt app/src/test/java/com/example/honorofkingsassistant/V55SessionIntegrationTest.kt
-git commit -m "feat(session): integrate V5.5 recovery and item guidance"
+git commit -m "feat(session): integrate 1.0 recovery and item guidance"
 ```
 
 ### Task 9: Android Emulator QA and Performance Evidence
@@ -671,19 +671,19 @@ git commit -m "feat(session): integrate V5.5 recovery and item guidance"
 - Consumes: assembled debug APK and adb target.
 - Produces: repeatable install/launch/overlay/logcat QA evidence.
 
-- [ ] **Step 1: Add a failing CI contract for V5.5 assets and tests**
+- [ ] **Step 1: Add a failing CI contract for Version 1.0 assets and tests**
 
-Extend validation to require `hok_items.json`, Spanish alias validator, scoreboard scan contract, item catalog validator, and V5.5 version metadata.
+Extend validation to require `hok_items.json`, Spanish alias validator, scoreboard scan contract, item catalog validator, and Version 1.0 metadata.
 
 - [ ] **Step 2: Run contract and confirm failure**
 
 Run: `python tools/test_v5_delivery_contract.py`
 
-Expected: FAIL until workflow and metadata include V5.5 artifacts.
+Expected: FAIL until workflow and metadata include Version 1.0 artifacts.
 
 - [ ] **Step 3: Update CI and version metadata**
 
-Set `versionCode 12` and `versionName "5.5-personal-jkm-lx3-rc1"`. CI runs unit tests, lint, assemble, offline manifest verification, JSON validators, and artifact upload.
+Set `versionCode 12` and `versionName "1.0.0-personal-jkm-lx3-rc1"`. CI runs unit tests, lint, assemble, offline manifest verification, JSON validators, and artifact upload.
 
 - [ ] **Step 4: Build and install on an Android 9-compatible AVD**
 
@@ -720,7 +720,7 @@ Acceptance: no crash/ANR, proportional set size remains below 220 MB, no unbound
 
 ```powershell
 git add app/build.gradle .github/workflows/android-ci.yml docs/qa/v5-5-emulator-checklist.md tools/v55_emulator_smoke.ps1 tools/test_v5_delivery_contract.py
-git commit -m "test: add V5.5 emulator and CI gates"
+git commit -m "test: add Version 1.0 emulator and CI gates"
 ```
 
 ### Task 10: Final Verification and Candidate Handoff
@@ -731,7 +731,7 @@ git commit -m "test: add V5.5 emulator and CI gates"
 
 **Interfaces:**
 - Consumes: all prior tasks.
-- Produces: a single traceable V5.5 candidate with build evidence and explicit physical-device gates.
+- Produces: a single traceable Version 1.0 personal candidate with build evidence and explicit physical-device gates.
 
 - [ ] **Step 1: Run the complete verification suite**
 
@@ -774,6 +774,5 @@ Record exact test counts, lint result, APK path/hash, emulator version, memory/g
 
 ```powershell
 git add README.md docs/qa/v5-5-verification-report.md
-git commit -m "docs: record V5.5 candidate verification"
+git commit -m "docs: record Version 1.0 candidate verification"
 ```
-

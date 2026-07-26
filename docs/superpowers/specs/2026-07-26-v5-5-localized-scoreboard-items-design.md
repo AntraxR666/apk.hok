@@ -1,14 +1,14 @@
-# HoK Draft Assistant V5.5 — Localized Identity, Scoreboard Recovery, and Items
+# HoK Draft Assistant 1.0 — Localized Identity, Scoreboard Recovery, and Items
 
 ## Objective
 
-Deliver a stable personal V5.5 for the Huawei JKM-LX3 that remains comfortable
+Deliver the first formal personal 1.0 release for the Huawei JKM-LX3 that remains comfortable
 over Honor of Kings, recognizes canonical hero names and the Spanish titles shown
 by the user's client, supports ranked and normal matches, can recover the full
 composition from the in-game scoreboard on demand, and recommends the next item
 with an explanation.
 
-V5.5 is the reliability and data-quality release. Predictive V6 features must not
+Version 1.0 is the reliability and data-quality release. Predictive commercial features must not
 be built on top of unresolved identities, an unstable overlay, or unvalidated
 counter data.
 
@@ -28,7 +28,7 @@ counter data.
 
 ## Scope decomposition
 
-V5.5 contains five independently testable subsystems:
+Version 1.0 contains five independently testable subsystems:
 
 1. Overlay usability and match/input controls.
 2. Localized hero identity and gallery calibration.
@@ -37,7 +37,7 @@ V5.5 contains five independently testable subsystems:
 5. Explainable, adaptive item recommendations.
 
 V6 is specified only as the next architectural direction. It is not mixed into
-the V5.5 implementation.
+the Version 1.0 implementation.
 
 ## 1. Overlay usability
 
@@ -372,14 +372,14 @@ EMUI behavior cannot be faithfully reproduced by a generic AVD.
 
 - `testDebugUnitTest`, `lintDebug`, and `assembleDebug` pass.
 - APK remains without network permissions.
-- Existing 31 tests remain green and new V5.5 tests pass.
+- Existing 31 tests remain green and new Version 1.0 tests pass.
 - Real Huawei session: 30 minutes without crash/ANR, overlay remains scrollable,
   scoreboard scan restores the overlay, and no automatic correction replaces a
   manual identity.
 
 ## V6 direction: Adaptive Decision Engine
 
-V6 begins only after the V5.5 device gates pass.
+The universal/commercial line begins only after the personal 1.0 device gates pass.
 
 ### Included
 
@@ -405,7 +405,7 @@ V6 begins only after the V5.5 device gates pass.
 
 ## Acceptance criteria
 
-V5.5 is complete only when:
+Version 1.0 personal is complete only when:
 
 1. All twelve supplied Spanish titles resolve to the correct stable identity.
 2. Gallery calibration can add a new verified alias without recompiling.
