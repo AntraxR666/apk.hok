@@ -134,7 +134,7 @@ git commit -m "feat(identity): recognize verified Spanish hero titles"
 
 **Interfaces:**
 - Consumes: `Hero.allRecognitionAliases()` from Task 1.
-- Produces: `HeroNameMatcher.match(rawText): HeroNameMatch?`, `MatchKind.EXACT_ALIAS | EXACT_CANONICAL | FUZZY`, and `UnknownHeroTextStore.record(text, region, confidence)`.
+- Produces: `HeroNameMatcher.match(rawText): HeroNameMatch?`, `MatchKind.EXACT_ALIAS | EXACT_CANONICAL | FUZZY`, and `UnknownHeroTextStore.record(text, region, evidenceSource)`.
 
 - [ ] **Step 1: Write failing matching tests**
 
@@ -180,9 +180,13 @@ data class HeroNameMatch(
 
 Build separate normalized exact maps. Only run fuzzy matching after both exact maps miss, require `minimumScore`, and reject single-token fragments shorter than five characters.
 
-- [ ] **Step 4: Record strong unknown OCR strings**
+- [ ] **Step 4: Record unknown OCR strings without fabricating confidence**
 
-Store only text with OCR confidence at least `0.80`, length `4..48`, and a known hero-name region. Cap the app-private JSON log at 200 unique normalized entries.
+ML Kit Latin `Text.Line` does not expose OCR confidence in this dependency.
+Store only unresolved text with length `4..48` whose bounding box falls inside a
+known hero-name/title region. Persist `evidenceSource = "mlkit_line_in_hero_roi"`
+instead of inventing a numeric OCR score. Cap the app-private JSON log at 200
+unique normalized entries.
 
 - [ ] **Step 5: Run focused and regression tests**
 
