@@ -24,6 +24,8 @@ data class AssistantUiState(
     val learnedPortraitCount: Int = 0,
     val recognition: RecognitionCalibrationState = RecognitionCalibrationState.UNCALIBRATED,
     val loadingRosterReconciliation: LoadingRosterReconciliationResult? = null,
+    val manualAssignments: ManualTeamAssignments = ManualTeamAssignments(),
+    val loadingConfirmationReview: Boolean = false,
     val diagnostics: VisionDiagnostics = VisionDiagnostics(),
     val lastUpdatedAtMs: Long = System.currentTimeMillis()
 )

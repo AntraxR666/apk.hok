@@ -1,9 +1,11 @@
 package com.example.honorofkingsassistant
 
 import android.app.Service
+import android.content.res.Configuration
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -12,6 +14,7 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.Button
@@ -19,11 +22,17 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 class OverlayService : Service() {
     private lateinit var windowManager: WindowManager
+    private lateinit var counterEngine: CounterEngine
     private var rootView: LinearLayout? = null
     private var panelView: ScrollView? = null
+    private var mainPanelContent: LinearLayout? = null
+    private var manualEditorContent: LinearLayout? = null
+    private var toggleButton: Button? = null
     private var bubbleView: TextView? = null
     private var statusView: TextView? = null
     private var diagnosticsView: TextView? = null
@@ -36,19 +45,31 @@ class OverlayService : Service() {
     private var rescanButton: Button? = null
     private val playerSlotButtons = linkedMapOf<Int, Button>()
     private val playerPickButtons = linkedMapOf<PlayerPickOverride, Button>()
+    private val inputModeButtons = linkedMapOf<InputMode, Button>()
+    private val matchModeButtons = linkedMapOf<MatchMode, Button>()
     private var params: WindowManager.LayoutParams? = null
+    private var lastRenderedStage: AssistantStage? = null
     private var unsubscribe: (() -> Unit)? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        counterEngine = CounterEngine(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) {
-            stopAssistant()
-            return START_NOT_STICKY
+        when (intent?.action) {
+            ACTION_STOP -> {
+                stopAssistant()
+                return START_NOT_STICKY
+            }
+            ACTION_RESTORE_AFTER_ONE_SHOT -> {
+                rootView?.visibility = View.VISIBLE
+                if (intent.getBooleanExtra(EXTRA_OPEN_MANUAL_EDITOR, false)) {
+                    showManualEditor(forceTenSlots = true)
+                }
+            }
         }
 
         if (!Settings.canDrawOverlays(this)) {
@@ -89,7 +110,7 @@ class OverlayService : Service() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(6), dp(6), dp(6), dp(6))
-            setBackgroundColor(Color.argb(238, 18, 22, 28))
+            background = panelBackground(COLLAPSED_ALPHA)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) elevation = dp(10).toFloat()
         }
 
@@ -101,7 +122,9 @@ class OverlayService : Service() {
             text = "HOK · PAUSA"
             textSize = 14f
             setTextColor(Color.WHITE)
-            setPadding(dp(10), dp(8), dp(10), dp(8))
+            gravity = Gravity.CENTER_VERTICAL
+            minHeight = dp(DRAG_HANDLE_HEIGHT_DP)
+            setPadding(dp(10), 0, dp(10), 0)
             setBackgroundColor(Color.rgb(46, 125, 250))
         }
         bubbleView = bubble
@@ -113,8 +136,13 @@ class OverlayService : Service() {
             } else {
                 getString(R.string.expand_overlay)
             }
+            root.background = panelBackground(
+                if (panel.visibility == View.VISIBLE) EXPANDED_ALPHA else COLLAPSED_ALPHA
+            )
+            if (panel.visibility != View.VISIBLE) showMainPanel()
             root.post { clampOverlayPosition(root, layoutParams) }
         }
+        toggleButton = toggle
         val close = compactButton(getString(R.string.stop_short)) { stopAssistant() }
         header.addView(bubble)
         header.addView(toggle)
@@ -124,13 +152,25 @@ class OverlayService : Service() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(4), dp(8), dp(4), dp(8))
         }
+        mainPanelContent = panelContent
+        val manualContent = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+            setPadding(dp(4), dp(8), dp(4), dp(8))
+        }
+        manualEditorContent = manualContent
+        val panelHost = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(panelContent)
+            addView(manualContent)
+        }
         val scrollPanel = ScrollView(this).apply {
             visibility = View.GONE
             isFillViewport = true
             isVerticalScrollBarEnabled = true
             overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
             addView(
-                panelContent,
+                panelHost,
                 FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT
@@ -151,6 +191,21 @@ class OverlayService : Service() {
 
         panelContent.addView(statusView)
         panelContent.addView(requireNotNull(diagnosticsView))
+        panelContent.addView(sectionLabel(getString(R.string.input_mode_title)))
+        panelContent.addView(
+            buttonRow(
+                inputModeButton(InputMode.AUTO_SCAN, getString(R.string.input_auto)),
+                inputModeButton(InputMode.MANUAL, getString(R.string.input_manual))
+            )
+        )
+        panelContent.addView(sectionLabel(getString(R.string.match_mode_title)))
+        panelContent.addView(
+            buttonRow(
+                matchModeButton(MatchMode.AUTO, getString(R.string.match_auto)),
+                matchModeButton(MatchMode.RANKED_DRAFT, getString(R.string.match_ranked)),
+                matchModeButton(MatchMode.NORMAL_BLIND, getString(R.string.match_normal))
+            )
+        )
         panelContent.addView(sectionLabel(getString(R.string.manual_stage_title)))
         panelContent.addView(
             buttonRow(
@@ -203,28 +258,49 @@ class OverlayService : Service() {
         rescanButton = actionButton(getString(R.string.rescan)) {
             sendCaptureAction(ScreenCaptureService.ACTION_FORCE_SCAN)
         }
+        panelContent.addView(buttonRow(requireNotNull(rescanButton)))
+        panelContent.addView(
+            actionButton(getString(R.string.confirm_loading_roster)) {
+                root.visibility = View.INVISIBLE
+                sendCaptureAction(ScreenCaptureService.ACTION_CONFIRM_LOADING_ROSTER)
+                mainHandler.postDelayed({
+                    if (root.visibility != View.VISIBLE) root.visibility = View.VISIBLE
+                }, ONE_SHOT_OVERLAY_TIMEOUT_MS)
+            }
+        )
+        panelContent.addView(
+            actionButton(getString(R.string.scan_scoreboard_items)) {
+                root.visibility = View.INVISIBLE
+                sendCaptureAction(ScreenCaptureService.ACTION_SCAN_SCOREBOARD)
+                mainHandler.postDelayed({
+                    if (root.visibility != View.VISIBLE) root.visibility = View.VISIBLE
+                }, ONE_SHOT_OVERLAY_TIMEOUT_MS)
+            }
+        )
         panelContent.addView(
             buttonRow(
-                requireNotNull(rescanButton),
                 actionButton(getString(R.string.swap_sides)) {
                     sendCaptureAction(ScreenCaptureService.ACTION_SWAP_SIDES)
                 },
-                actionButton(getString(R.string.manual_edit)) {
-                    startActivity(
-                        Intent(this@OverlayService, MainActivity::class.java)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    )
+                actionButton(getString(R.string.edit_team)) {
+                    showManualEditor(forceTenSlots = false)
                 }
             )
         )
 
         root.addView(header)
         root.addView(scrollPanel)
-        attachDrag(bubble, root, layoutParams)
+        val dragHandle = bubble
+        attachDrag(dragHandle, root, layoutParams)
         windowManager.addView(root, layoutParams)
         rootView = root
         root.post { clampOverlayPosition(root, layoutParams) }
         render(AssistantSessionBus.state)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        updatePanelBoundsAndClamp()
     }
 
     private fun sectionLabel(label: String): TextView = overlayText(12f, true).apply {
@@ -266,6 +342,15 @@ class OverlayService : Service() {
         sendPlayerPickOverrideAction(override)
     }.also { playerPickButtons[override] = it }
 
+    private fun inputModeButton(mode: InputMode, label: String): Button = actionButton(label) {
+        sendInputModeAction(mode)
+        if (mode == InputMode.MANUAL) showManualEditor(forceTenSlots = false)
+    }.also { inputModeButtons[mode] = it }
+
+    private fun matchModeButton(mode: MatchMode, label: String): Button = actionButton(label) {
+        sendMatchModeAction(mode)
+    }.also { matchModeButtons[mode] = it }
+
     private fun buttonRow(vararg buttons: Button): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         buttons.forEach { button ->
@@ -281,10 +366,12 @@ class OverlayService : Service() {
         overlayView: View,
         layoutParams: WindowManager.LayoutParams
     ) {
+        val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
         var downX = 0f
         var downY = 0f
         var startX = 0
         var startY = 0
+        var dragging = false
         dragHandle.setOnTouchListener { _, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
@@ -292,16 +379,32 @@ class OverlayService : Service() {
                     downY = event.rawY
                     startX = layoutParams.x
                     startY = layoutParams.y
+                    dragging = false
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    layoutParams.x = startX - (event.rawX - downX).toInt()
-                    layoutParams.y = startY + (event.rawY - downY).toInt()
-                    clampOverlayPosition(overlayView, layoutParams)
-                    runCatching { windowManager.updateViewLayout(overlayView, layoutParams) }
+                    val deltaX = event.rawX - downX
+                    val deltaY = event.rawY - downY
+                    if (!dragging && (abs(deltaX) > touchSlop || abs(deltaY) > touchSlop)) {
+                        dragging = true
+                    }
+                    if (dragging) {
+                        layoutParams.x = startX - deltaX.toInt()
+                        layoutParams.y = startY + deltaY.toInt()
+                        clampOverlayPosition(overlayView, layoutParams)
+                        runCatching { windowManager.updateViewLayout(overlayView, layoutParams) }
+                    }
                     true
                 }
-                else -> true
+                MotionEvent.ACTION_UP -> {
+                    if (!dragging) dragHandle.performClick()
+                    true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    dragging = false
+                    true
+                }
+                else -> false
             }
         }
     }
@@ -322,8 +425,138 @@ class OverlayService : Service() {
 
     private fun maxOverlayPanelHeight(): Int {
         val (_, height) = availableDisplaySize()
-        val screenBound = (height - dp(72)).coerceAtLeast(dp(120))
-        return minOf(dp(520), screenBound)
+        return (height * MAX_PANEL_HEIGHT_RATIO).roundToInt().coerceAtLeast(dp(120))
+    }
+
+    private fun updatePanelBoundsAndClamp() {
+        val panel = panelView ?: return
+        panel.layoutParams = LinearLayout.LayoutParams(
+            maxOverlayPanelWidth(),
+            maxOverlayPanelHeight()
+        )
+        val root = rootView ?: return
+        val layoutParams = params ?: return
+        root.post {
+            clampOverlayPosition(root, layoutParams)
+            runCatching { windowManager.updateViewLayout(root, layoutParams) }
+        }
+    }
+
+    private fun panelBackground(alpha: Float): GradientDrawable = GradientDrawable().apply {
+        cornerRadius = dp(10).toFloat()
+        setColor(Color.argb((alpha * 255).roundToInt(), 18, 22, 28))
+    }
+
+    private fun showMainPanel() {
+        mainPanelContent?.visibility = View.VISIBLE
+        manualEditorContent?.visibility = View.GONE
+    }
+
+    private fun showManualEditor(forceTenSlots: Boolean) {
+        val editor = manualEditorContent ?: return
+        val state = AssistantSessionBus.state
+        val effectiveMode = if (forceTenSlots) {
+            MatchMode.RANKED_DRAFT
+        } else {
+            state.matchMode.effective
+        }
+        mainPanelContent?.visibility = View.GONE
+        editor.visibility = View.VISIBLE
+        editor.removeAllViews()
+        editor.addView(sectionLabel(getString(R.string.manual_editor_title)))
+        editor.addView(
+            actionButton(getString(R.string.back_to_summary)) {
+                showMainPanel()
+            }
+        )
+        ManualTeamEditorPolicy.slots(effectiveMode).forEach { slot ->
+            val current = state.manualAssignments.heroAt(slot.side, slot.slotIndex)
+                ?: rosterHeroAt(state, slot)
+            val label = buildString {
+                append(if (slot.side == TeamSide.ALLY) getString(R.string.ally_short) else getString(R.string.enemy_short))
+                append(" ")
+                append(slot.slotIndex)
+                append(": ")
+                append(current ?: getString(R.string.unassigned))
+            }
+            val row = buttonRow(
+                actionButton(label) {
+                    showHeroPicker(slot, forceTenSlots)
+                }
+            )
+            if (current != null) {
+                row.addView(
+                    actionButton(getString(R.string.remove_hero)) {
+                        sendManualRemove(slot)
+                        mainHandler.postDelayed(
+                            { showManualEditor(forceTenSlots) },
+                            UI_REFRESH_DELAY_MS
+                        )
+                    },
+                    LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                )
+            }
+            editor.addView(row)
+        }
+        panelView?.scrollTo(0, 0)
+    }
+
+    private fun showHeroPicker(slot: ManualTeamSlot, teachLoading: Boolean) {
+        val editor = manualEditorContent ?: return
+        editor.removeAllViews()
+        editor.addView(sectionLabel(getString(R.string.choose_hero)))
+        editor.addView(
+            actionButton(getString(R.string.back_to_team_editor)) {
+                showManualEditor(forceTenSlots = teachLoading)
+            }
+        )
+        val heroesContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        fun renderHeroes(role: String?) {
+            heroesContainer.removeAllViews()
+            counterEngine.heroesForRole(role).forEach { hero ->
+                val title = hero.identityAliases.displayTitles.firstOrNull()
+                val label = if (title == null) hero.name else "${hero.name} · $title"
+                heroesContainer.addView(
+                    actionButton(label) {
+                        sendManualAssignment(slot, hero.name, teachLoading)
+                        showMainPanel()
+                        panelView?.scrollTo(0, 0)
+                    }
+                )
+            }
+        }
+        editor.addView(sectionLabel(getString(R.string.filter_role)))
+        editor.addView(
+            buttonRow(
+                actionButton(getString(R.string.role_all)) { renderHeroes(null) },
+                actionButton(getString(R.string.role_clash)) { renderHeroes("Clash Lane") },
+                actionButton(getString(R.string.role_mid)) { renderHeroes("Mid Lane") }
+            )
+        )
+        editor.addView(
+            buttonRow(
+                actionButton(getString(R.string.role_farm)) { renderHeroes("Farm Lane") },
+                actionButton(getString(R.string.role_jungle)) { renderHeroes("Jungler") },
+                actionButton(getString(R.string.role_roam)) { renderHeroes("Roamer/Support") }
+            )
+        )
+        editor.addView(heroesContainer)
+        renderHeroes(null)
+        panelView?.scrollTo(0, 0)
+    }
+
+    private fun rosterHeroAt(state: AssistantUiState, slot: ManualTeamSlot): String? {
+        val loading = state.loadingRosterReconciliation?.assignments?.firstOrNull {
+            it.side == slot.side && it.slotIndex == slot.slotIndex
+        }?.heroName
+        if (loading != null) return loading
+        val heroes = if (slot.side == TeamSide.ALLY) state.snapshot.allies else state.snapshot.enemies
+        return heroes.getOrNull(slot.slotIndex - 1)?.heroName
     }
 
     @Suppress("DEPRECATION")
@@ -347,6 +580,15 @@ class OverlayService : Service() {
     }
 
     private fun render(state: AssistantUiState) {
+        if (state.selectedStage == AssistantStage.IN_GAME &&
+            lastRenderedStage != AssistantStage.IN_GAME
+        ) {
+            panelView?.visibility = View.GONE
+            rootView?.background = panelBackground(COLLAPSED_ALPHA)
+            toggleButton?.text = getString(R.string.expand_overlay)
+            showMainPanel()
+        }
+        lastRenderedStage = state.selectedStage
         bubbleView?.text = when (state.selectedStage) {
             AssistantStage.PAUSED -> "HOK · PAUSA"
             AssistantStage.DRAFT -> "HOK · DRAFT"
@@ -370,6 +612,22 @@ class OverlayService : Service() {
             }
         }
         rescanButton?.isEnabled = state.selectedStage == AssistantStage.DRAFT
+        inputModeButtons.forEach { (mode, button) ->
+            val base = if (mode == InputMode.AUTO_SCAN) {
+                getString(R.string.input_auto)
+            } else {
+                getString(R.string.input_manual)
+            }
+            button.text = if (mode == state.inputMode) "✓ $base" else base
+        }
+        matchModeButtons.forEach { (mode, button) ->
+            val base = when (mode) {
+                MatchMode.AUTO -> getString(R.string.match_auto)
+                MatchMode.RANKED_DRAFT -> getString(R.string.match_ranked)
+                MatchMode.NORMAL_BLIND -> getString(R.string.match_normal)
+            }
+            button.text = if (mode == state.matchMode.preference) "✓ $base" else base
+        }
 
         val suggested = state.suggestedStage
         suggestionButton?.apply {
@@ -531,6 +789,46 @@ class OverlayService : Service() {
         )
     }
 
+    private fun sendInputModeAction(mode: InputMode) {
+        startService(
+            Intent(this, ScreenCaptureService::class.java)
+                .setAction(ScreenCaptureService.ACTION_SET_INPUT_MODE)
+                .putExtra(ScreenCaptureService.EXTRA_INPUT_MODE, mode.name)
+        )
+    }
+
+    private fun sendMatchModeAction(mode: MatchMode) {
+        startService(
+            Intent(this, ScreenCaptureService::class.java)
+                .setAction(ScreenCaptureService.ACTION_SET_MATCH_MODE)
+                .putExtra(ScreenCaptureService.EXTRA_MATCH_MODE, mode.name)
+        )
+    }
+
+    private fun sendManualAssignment(
+        slot: ManualTeamSlot,
+        heroName: String,
+        teachLoading: Boolean
+    ) {
+        startService(
+            Intent(this, ScreenCaptureService::class.java)
+                .setAction(ScreenCaptureService.ACTION_MANUAL_ASSIGN_SLOT)
+                .putExtra(ScreenCaptureService.EXTRA_TEAM_SIDE, slot.side.name)
+                .putExtra(ScreenCaptureService.EXTRA_MANUAL_SLOT_INDEX, slot.slotIndex)
+                .putExtra(ScreenCaptureService.EXTRA_HERO_NAME, heroName)
+                .putExtra(ScreenCaptureService.EXTRA_TEACH_LOADING_TEMPLATE, teachLoading)
+        )
+    }
+
+    private fun sendManualRemove(slot: ManualTeamSlot) {
+        startService(
+            Intent(this, ScreenCaptureService::class.java)
+                .setAction(ScreenCaptureService.ACTION_MANUAL_REMOVE_SLOT)
+                .putExtra(ScreenCaptureService.EXTRA_TEAM_SIDE, slot.side.name)
+                .putExtra(ScreenCaptureService.EXTRA_MANUAL_SLOT_INDEX, slot.slotIndex)
+        )
+    }
+
     private fun sendPlayerPickOverrideAction(override: PlayerPickOverride) {
         startService(
             Intent(this, ScreenCaptureService::class.java)
@@ -565,5 +863,14 @@ class OverlayService : Service() {
     companion object {
         const val ACTION_SHOW = "com.example.honorofkingsassistant.SHOW_OVERLAY"
         const val ACTION_STOP = "com.example.honorofkingsassistant.STOP_OVERLAY"
+        const val ACTION_RESTORE_AFTER_ONE_SHOT =
+            "com.example.honorofkingsassistant.RESTORE_OVERLAY_AFTER_ONE_SHOT"
+        const val EXTRA_OPEN_MANUAL_EDITOR = "extra_open_manual_editor"
+        const val COLLAPSED_ALPHA = 0.55f
+        const val EXPANDED_ALPHA = 0.82f
+        const val MAX_PANEL_HEIGHT_RATIO = 0.72f
+        const val DRAG_HANDLE_HEIGHT_DP = 40
+        private const val ONE_SHOT_OVERLAY_TIMEOUT_MS = 10_500L
+        private const val UI_REFRESH_DELAY_MS = 120L
     }
 }

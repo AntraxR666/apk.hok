@@ -58,6 +58,10 @@ class ScreenCaptureService : Service() {
     private var learnedPortraitCount = 0
     private var lastRecognition = RecognitionCalibrationState.UNCALIBRATED
     private var lastLoadingRosterReconciliation: LoadingRosterReconciliationResult? = null
+    private var manualAssignments = ManualTeamAssignments()
+    private var pendingLoadingConfirmation = false
+    private var loadingConfirmationDeadlineMs = 0L
+    private var loadingConfirmationReview = false
     private var lastVisionDiagnostics = VisionDiagnostics()
     private val manualAllies = linkedSetOf<String>()
     private val manualEnemies = linkedSetOf<String>()
@@ -232,7 +236,10 @@ class ScreenCaptureService : Service() {
                 val side = intent.getStringExtra(EXTRA_TEAM_SIDE)
                 if (counterEngine.findHero(heroName) != null) {
                     val teamSide = if (side == TeamSide.ALLY.name) TeamSide.ALLY else TeamSide.ENEMY
-                    if (teamSide == TeamSide.ALLY) manualAllies += heroName else manualEnemies += heroName
+                    val occupied = (1..5).firstOrNull {
+                        manualAssignments.heroAt(teamSide, it) == null
+                    } ?: 5
+                    assignManualSlot(teamSide, occupied, heroName, teachLoading = false)
                     val learned = learnFromCurrentPreview(heroName, teamSide)
                     if (learned) {
                         learnedPortraitCount++
@@ -245,10 +252,63 @@ class ScreenCaptureService : Service() {
                 }
                 return START_NOT_STICKY
             }
+            ACTION_MANUAL_ASSIGN_SLOT -> {
+                val heroName = intent.getStringExtra(EXTRA_HERO_NAME).orEmpty()
+                val side = intent.getStringExtra(EXTRA_TEAM_SIDE)
+                    ?.let { runCatching { TeamSide.valueOf(it) }.getOrNull() }
+                    ?: return START_NOT_STICKY
+                val slotIndex = intent.getIntExtra(EXTRA_MANUAL_SLOT_INDEX, 0)
+                val teachLoading = intent.getBooleanExtra(EXTRA_TEACH_LOADING_TEMPLATE, false)
+                if (slotIndex in 1..5 && counterEngine.findHero(heroName) != null) {
+                    val learned = assignManualSlot(side, slotIndex, heroName, teachLoading)
+                    publishCurrent(
+                        if (learned) {
+                            "Corrección confirmada; se aprendió esta tarjeta de carga localmente"
+                        } else {
+                            "Slot manual actualizado"
+                        }
+                    )
+                }
+                return START_NOT_STICKY
+            }
+            ACTION_MANUAL_REMOVE_SLOT -> {
+                val side = intent.getStringExtra(EXTRA_TEAM_SIDE)
+                    ?.let { runCatching { TeamSide.valueOf(it) }.getOrNull() }
+                    ?: return START_NOT_STICKY
+                val slotIndex = intent.getIntExtra(EXTRA_MANUAL_SLOT_INDEX, 0)
+                if (slotIndex in 1..5) {
+                    manualAssignments = manualAssignments.remove(side, slotIndex)
+                    syncLegacyManualSets()
+                    publishCurrent("Héroe manual quitado del slot")
+                }
+                return START_NOT_STICKY
+            }
             ACTION_MANUAL_CLEAR -> {
+                manualAssignments = manualAssignments.clear()
                 manualAllies.clear()
                 manualEnemies.clear()
                 publishCurrent("Correcciones manuales eliminadas")
+                return START_NOT_STICKY
+            }
+            ACTION_CONFIRM_LOADING_ROSTER -> {
+                if (selectedStage != AssistantStage.DRAFT) {
+                    restoreOverlayAfterOneShot()
+                    publishCurrent("Activa Selección y espera la pantalla de dos filas antes de confirmar")
+                } else {
+                    pendingLoadingConfirmation = true
+                    loadingConfirmationReview = false
+                    loadingConfirmationDeadlineMs = SystemClock.elapsedRealtime() +
+                        LOADING_CONFIRMATION_TIMEOUT_MS
+                    forceNextFrame = true
+                    publishCurrent("Confirmación armada; esperando la pantalla de carga de dos filas")
+                }
+                return START_NOT_STICKY
+            }
+            ACTION_SCAN_SCOREBOARD -> {
+                restoreOverlayAfterOneShot()
+                publishCurrent(
+                    "Verificación de marcador preparada; abre el marcador y vuelve a pulsar cuando el analizador esté habilitado"
+                )
                 return START_NOT_STICKY
             }
         }
@@ -343,6 +403,9 @@ class ScreenCaptureService : Service() {
         lastSubphase = DraftSubphase.UNKNOWN
         lastSlotFingerprints = emptyList()
         lastLoadingRosterReconciliation = null
+        manualAssignments = ManualTeamAssignments()
+        pendingLoadingConfirmation = false
+        loadingConfirmationReview = false
         manualAllies.clear()
         manualEnemies.clear()
         playerPickOverride = PlayerPickOverride.AUTO
@@ -543,6 +606,22 @@ class ScreenCaptureService : Service() {
                     lastVisionSnapshot = routed.snapshot
                 }
 
+                if (pendingLoadingConfirmation) {
+                    when {
+                        result.subphase == DraftSubphase.LOADING &&
+                            lastLoadingRosterReconciliation != null -> {
+                            pendingLoadingConfirmation = false
+                            loadingConfirmationReview = true
+                            restoreOverlayAfterOneShot(openManualEditor = true)
+                        }
+                        SystemClock.elapsedRealtime() >= loadingConfirmationDeadlineMs -> {
+                            pendingLoadingConfirmation = false
+                            loadingConfirmationReview = false
+                            restoreOverlayAfterOneShot()
+                        }
+                    }
+                }
+
                 val stabilizedResult = result.copy(board = lastBoard)
                 val status = when (result.subphase) {
                     DraftSubphase.BAN -> "Fase de veto detectada; preparando amenazas prioritarias"
@@ -702,6 +781,8 @@ class ScreenCaptureService : Service() {
             learnedPortraitCount = learnedPortraitCount,
             recognition = lastRecognition,
             loadingRosterReconciliation = lastLoadingRosterReconciliation,
+            manualAssignments = manualAssignments,
+            loadingConfirmationReview = loadingConfirmationReview,
             diagnostics = lastVisionDiagnostics
         )
         val baseStatus = buildString {
@@ -732,6 +813,47 @@ class ScreenCaptureService : Service() {
 
     private fun mergeManual(snapshot: DraftSnapshot): DraftSnapshot {
         return ManualDraftSnapshotMerger.merge(snapshot, manualAllies, manualEnemies)
+    }
+
+    private fun assignManualSlot(
+        side: TeamSide,
+        slotIndex: Int,
+        heroName: String,
+        teachLoading: Boolean
+    ): Boolean {
+        manualAssignments = manualAssignments.assign(side, slotIndex, heroName)
+        syncLegacyManualSets()
+        if (!teachLoading || !loadingConfirmationReview || lastSubphase != DraftSubphase.LOADING) {
+            return false
+        }
+        val fingerprint = lastSlotFingerprints.firstOrNull {
+            it.side == side && it.slotIndex == slotIndex
+        } ?: return false
+        val learned = visionEngine.learnPortrait(
+            heroName,
+            fingerprint,
+            PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+        )
+        if (learned) {
+            learnedPortraitCount++
+            lastRecognition = visionEngine.recognitionCalibration()
+        }
+        return learned
+    }
+
+    private fun syncLegacyManualSets() {
+        manualAllies.clear()
+        manualAllies += manualAssignments.heroes(TeamSide.ALLY)
+        manualEnemies.clear()
+        manualEnemies += manualAssignments.heroes(TeamSide.ENEMY)
+    }
+
+    private fun restoreOverlayAfterOneShot(openManualEditor: Boolean = false) {
+        startService(
+            Intent(this, OverlayService::class.java)
+                .setAction(OverlayService.ACTION_RESTORE_AFTER_ONE_SHOT)
+                .putExtra(OverlayService.EXTRA_OPEN_MANUAL_EDITOR, openManualEditor)
+        )
     }
 
     private fun startOverlayService() {
@@ -831,6 +953,14 @@ class ScreenCaptureService : Service() {
         const val ACTION_SWAP_SIDES = "com.example.honorofkingsassistant.SWAP_SIDES"
         const val ACTION_FORCE_SCAN = "com.example.honorofkingsassistant.FORCE_SCAN"
         const val ACTION_MANUAL_ADD = "com.example.honorofkingsassistant.MANUAL_ADD"
+        const val ACTION_MANUAL_ASSIGN_SLOT =
+            "com.example.honorofkingsassistant.MANUAL_ASSIGN_SLOT"
+        const val ACTION_MANUAL_REMOVE_SLOT =
+            "com.example.honorofkingsassistant.MANUAL_REMOVE_SLOT"
+        const val ACTION_CONFIRM_LOADING_ROSTER =
+            "com.example.honorofkingsassistant.CONFIRM_LOADING_ROSTER"
+        const val ACTION_SCAN_SCOREBOARD =
+            "com.example.honorofkingsassistant.SCAN_SCOREBOARD"
         const val ACTION_SET_PLAYER_SLOT = "com.example.honorofkingsassistant.SET_PLAYER_SLOT"
         const val ACTION_SET_PLAYER_PICK_OVERRIDE = "com.example.honorofkingsassistant.SET_PLAYER_PICK_OVERRIDE"
         const val ACTION_MANUAL_CLEAR = "com.example.honorofkingsassistant.MANUAL_CLEAR"
@@ -838,6 +968,8 @@ class ScreenCaptureService : Service() {
         const val EXTRA_RESULT_DATA = "extra_result_data"
         const val EXTRA_HERO_NAME = "extra_hero_name"
         const val EXTRA_TEAM_SIDE = "extra_team_side"
+        const val EXTRA_MANUAL_SLOT_INDEX = "extra_manual_slot_index"
+        const val EXTRA_TEACH_LOADING_TEMPLATE = "extra_teach_loading_template"
         const val EXTRA_ASSISTANT_STAGE = "extra_assistant_stage"
         const val EXTRA_INPUT_MODE = "extra_input_mode"
         const val EXTRA_MATCH_MODE = "extra_match_mode"
@@ -847,5 +979,6 @@ class ScreenCaptureService : Service() {
         private const val TAG = "ScreenCaptureService"
         private const val CHANNEL_ID = "draft_capture"
         private const val NOTIFICATION_ID = 2001
+        private const val LOADING_CONFIRMATION_TIMEOUT_MS = 10_000L
     }
 }
