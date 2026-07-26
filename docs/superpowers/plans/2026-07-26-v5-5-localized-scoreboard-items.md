@@ -394,6 +394,9 @@ RANKED_DRAFT
 ```
 
 Also assert window dragging is installed on `dragHandle` and not on `ScrollView`.
+Assert the maximum height is recalculated from the current landscape display
+bounds whenever configuration changes; a portrait-time cached height is not
+acceptable for the JKM-LX3 game overlay.
 
 - [ ] **Step 2: Run contracts and confirm failure**
 
@@ -403,7 +406,9 @@ Expected: FAIL on missing alpha constants and controls.
 
 - [ ] **Step 3: Implement the overlay shell**
 
-Set bubble view alpha to `0.55f`; use a panel background whose alpha is `0.82f` while keeping text at full opacity. Compute:
+Set the collapsed bubble/background alpha to `0.55f`; do not lower the alpha of
+any text or interactive child. Use a panel background whose alpha is `0.82f`
+while keeping text and controls at full opacity. Compute:
 
 ```kotlin
 val maxPanelHeight = (resources.displayMetrics.heightPixels * 0.72f).roundToInt()
@@ -411,10 +416,16 @@ scrollView.layoutParams = LinearLayout.LayoutParams(panelWidth, maxPanelHeight)
 ```
 
 Attach movement touch handling only to a 40dp header handle. Let the scroll view and all child controls consume their own gestures.
+Use Android touch slop before initiating a drag so a tap on the handle does not
+move the window. Recalculate the panel height and clamp the window position on
+orientation/configuration changes.
 
 - [ ] **Step 4: Add explicit mode controls and actions**
 
 Publish immutable preference changes through service intents; do not mutate `AssistantSessionBus.state` directly from view listeners.
+The scoreboard action must use its own explicit in-game command; do not reuse
+the draft-only force-scan action. Keep normal-mode controls unavailable unless
+the calibrated Task 3 implementation and its review gate have passed.
 
 - [ ] **Step 5: Run contracts**
 
