@@ -108,13 +108,47 @@ private class SharedPreferencesPortraitTemplatePersistence(
 }
 
 /**
+ * Read-only portraits bundled with the app. They are a starting point for the base icons used
+ * during hero selection; user-confirmed variants remain separate and are never overwritten.
+ */
+object PortraitTemplateSeedCatalog {
+    private const val ASSET_NAME = "draft_portrait_seed_v1.json"
+
+    fun load(context: Context): Map<PortraitTemplateDomain, Map<String, List<PortraitFingerprint>>> =
+        runCatching {
+            context.assets.open(ASSET_NAME).bufferedReader().use { reader -> parse(reader.readText()) }
+        }.getOrElse { emptyMap() }
+
+    internal fun parse(raw: String): Map<PortraitTemplateDomain, Map<String, List<PortraitFingerprint>>> {
+        val root = JSONObject(raw)
+        val domain = PortraitTemplateDomain.valueOf(root.getString("domain"))
+        val templates = root.getJSONObject("templates")
+        val byHero = linkedMapOf<String, List<PortraitFingerprint>>()
+        templates.keys().forEach { normalizedHero ->
+            val values = templates.optJSONArray(normalizedHero) ?: JSONArray()
+            val fingerprints = buildList {
+                for (index in 0 until values.length()) {
+                    PortraitFingerprint.decode(values.optString(index))?.let(::add)
+                }
+            }
+            if (fingerprints.isNotEmpty()) byHero[normalizedHero] = fingerprints
+        }
+        return mapOf(domain to byHero)
+    }
+}
+
+/**
  * Stores only compact visual fingerprints in app-private SharedPreferences. No screenshot or
  * portrait image is persisted. Multiple templates per hero allow different skins/art variants.
  */
 class PortraitTemplateStore(
-    private val persistence: PortraitTemplatePersistence
+    private val persistence: PortraitTemplatePersistence,
+    private val seededTemplates: Map<PortraitTemplateDomain, Map<String, List<PortraitFingerprint>>> = emptyMap()
 ) {
-    constructor(context: Context) : this(SharedPreferencesPortraitTemplatePersistence(context))
+    constructor(context: Context) : this(
+        persistence = SharedPreferencesPortraitTemplatePersistence(context),
+        seededTemplates = PortraitTemplateSeedCatalog.load(context)
+    )
 
     @Synchronized
     fun learn(
@@ -137,30 +171,34 @@ class PortraitTemplateStore(
     @Synchronized
     fun templates(
         domain: PortraitTemplateDomain = PortraitTemplateDomain.DRAFT_PORTRAIT
-    ): Map<String, List<PortraitFingerprint>> = buildMap {
+    ): Map<String, List<PortraitFingerprint>> = linkedMapOf<String, MutableList<PortraitFingerprint>>().apply {
+        seededTemplates[domain].orEmpty().forEach { (hero, fingerprints) ->
+            put(hero, fingerprints.toMutableList())
+        }
         loadAll().forEach { (storageKey, fingerprints) ->
             heroKey(storageKey, domain)?.let { normalizedHero ->
-                put(normalizedHero, fingerprints)
+                val merged = getOrPut(normalizedHero) { mutableListOf() }
+                fingerprints.forEach { fingerprint ->
+                    if (merged.none { it.encode() == fingerprint.encode() }) merged += fingerprint
+                }
             }
         }
-    }
+    }.mapValues { (_, fingerprints) -> fingerprints.toList() }
 
     @Synchronized
     fun readiness(): RecognitionReadiness = calibrationState().readiness
 
     @Synchronized
     fun calibrationState(): RecognitionCalibrationState {
-        val storedTemplates = loadAll()
-        if (storedTemplates.isEmpty()) return RecognitionCalibrationState.UNCALIBRATED
-        val coveredHeroes = storedTemplates.keys.mapNotNull { storageKey ->
-            PortraitTemplateDomain.entries.firstNotNullOfOrNull { domain ->
-                heroKey(storageKey, domain)
-            }
-        }.toSet()
+        val byDomain = PortraitTemplateDomain.entries.associateWith(::templates)
+        val templateCount = byDomain.values.sumOf { templates ->
+            templates.values.sumOf(List<PortraitFingerprint>::size)
+        }
+        if (templateCount == 0) return RecognitionCalibrationState.UNCALIBRATED
+        val coveredHeroes = byDomain.values.flatMap { it.keys }.toSet()
         return RecognitionCalibrationState(
             readiness = RecognitionReadiness.READY,
-            storedTemplateCount =
-                storedTemplates.values.sumOf(List<PortraitFingerprint>::size),
+            storedTemplateCount = templateCount,
             coveredHeroCount = coveredHeroes.size
         )
     }

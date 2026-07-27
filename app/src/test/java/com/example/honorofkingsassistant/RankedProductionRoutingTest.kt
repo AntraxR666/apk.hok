@@ -24,8 +24,8 @@ class RankedProductionRoutingTest {
         assertEquals(RecognitionReadiness.UNCALIBRATED, state.recognition.readiness)
         assertEquals(0, state.recognition.storedTemplateCount)
         assertEquals(0, state.recognition.coveredHeroCount)
-        assertTrue(state.status.contains("reconocimiento visual sin calibrar", ignoreCase = true))
-        assertTrue(state.status.contains("galería", ignoreCase = true))
+        assertTrue(state.status.contains("reconocimiento visual sin plantillas", ignoreCase = true))
+        assertTrue(state.status.contains("corrección manual", ignoreCase = true))
         assertTrue(state.status.contains("manual", ignoreCase = true))
     }
 

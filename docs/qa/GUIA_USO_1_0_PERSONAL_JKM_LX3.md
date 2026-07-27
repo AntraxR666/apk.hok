@@ -1,6 +1,6 @@
 # HoK Draft Assistant 1.0 — guía de uso en Huawei JKM-LX3
 
-Esta guía corresponde a la APK `1.0.0-personal-jkm-lx3-rc1`. La burbuja puede moverse
+Esta guía corresponde a la APK `1.0.0-personal-jkm-lx3-rc2`. La burbuja puede moverse
 arrastrando solamente la franja azul `HOK · ...`; los botones dentro del panel no arrastran
 la burbuja y deben responder a toques normales.
 
@@ -32,27 +32,31 @@ El botón **Verificar equipos y actualizar compra** queda tenue e inactivo fuera
 ## Primera partida clasificatoria: forma fiable de empezar
 
 En clasificatoria la selección puede mostrar retratos y nombres de jugadores, sin el nombre del
-héroe. Por eso una instalación nueva no puede adivinar con seguridad todos los héroes solo por
-una imagen. La primera pasada debe ser supervisada: además de corregir el equipo, enseña al
-reconocedor local los retratos que están visibles.
+héroe. Esta versión ya incluye **111 plantillas iniciales** de los retratos base de selección,
+por lo que **Auto** debe intentar reconocerlos desde la primera instalación. No usa tarjetas de
+skins como si fueran retratos de selección. La corrección manual queda como respaldo seguro para
+un resultado ausente, ambiguo o para uno de los cinco héroes que todavía no tiene plantilla base
+verificada.
 
 1. Abre la burbuja con **Abrir**.
 2. Pulsa **Clasificatoria** y después **Selección**.
-3. En **Corrección y verificación**, pulsa **Manual** o **Editar héroes manualmente**.
+3. Espera unos segundos y revisa las sugerencias. Si un héroe no aparece o una sugerencia parece
+   dudosa, en **Corrección y verificación** pulsa **Manual** o **Editar héroes manualmente**.
 4. Verás `Aliado 1` a `Aliado 5` y `Enemigo 1` a `Enemigo 5`. Pulsa el slot que corresponde al
    retrato visible, filtra por rol si ayuda y elige el héroe. Cada ficha muestra `Nombre · título
    español`; por ejemplo, `Angela · La Maga de Fuego` es una sola heroína.
 5. Repite solo para los héroes ya bloqueados y visibles. Si un slot aún está vacío o solo es una
    preselección, déjalo sin asignar: no conviene enseñar una imagen equivocada.
 6. Al elegir un héroe mientras esa selección está visible, el estado debe indicar
-   **“se aprendió este retrato de selección localmente”**. Esa plantilla queda dentro del teléfono;
-   no se sube a Internet.
+   **“se aprendió este retrato de selección localmente”**. No es un requisito para empezar a usar
+   Auto: añade una corrección local adicional sin sustituir la plantilla inicial. No se sube a
+   Internet.
 7. Para tu propia posición, fija `Mi slot` en 1–5 si el detector no identifica de forma estable
    a R-95. Marca `Pendiente` antes de bloquear tu héroe y `Fijado` después de bloquearlo.
 
-En partidas posteriores puedes dejar **Auto** activo: las plantillas ya enseñadas ayudan a
-reconocer el mismo diseño de retrato. Si cambia mucho por una skin, actualización del juego o
-resolución, vuelve a corregir ese slot manualmente. La corrección manual siempre tiene prioridad.
+En partidas posteriores puedes dejar **Auto** activo. Si una actualización cambia el retrato base
+o si una lectura no es suficientemente segura, la app debe dejar el slot sin afirmar en lugar de
+inventar un héroe; corrígelo desde el editor. La corrección manual siempre tiene prioridad.
 
 ## Pantalla de carga: confirmar los diez héroes
 

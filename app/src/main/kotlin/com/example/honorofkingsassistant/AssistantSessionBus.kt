@@ -39,13 +39,13 @@ object RecognitionUiStatePolicy {
     ): AssistantUiState {
         val recognitionStatus = when (calibration.readiness) {
             RecognitionReadiness.UNCALIBRATED ->
-                "Reconocimiento visual sin calibrar; calibra desde la galería o usa entrada manual"
+                "Reconocimiento visual sin plantillas; usa corrección manual para confirmar el retrato"
             RecognitionReadiness.READY -> {
                 val templateLabel =
                     if (calibration.storedTemplateCount == 1) "plantilla" else "plantillas"
                 val heroLabel =
                     if (calibration.coveredHeroCount == 1) "héroe cubierto" else "héroes cubiertos"
-                "${calibration.storedTemplateCount} $templateLabel · " +
+                "${calibration.storedTemplateCount} $templateLabel base/aprendidas · " +
                     "${calibration.coveredHeroCount} $heroLabel"
             }
         }
