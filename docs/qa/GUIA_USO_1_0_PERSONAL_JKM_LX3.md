@@ -112,7 +112,8 @@ decisión crítica en que la app haya leído un ítem ya comprado.
 - **La confirmación previa está tenue:** pulsa **Selección** primero y úsala únicamente en la
   pantalla de carga de dos filas.
 - **La lista de héroes no se abre:** toca **Editar héroes manualmente**, luego toca un slot y el
-  rol o `Todos`. No intentes arrastrar desde el contenido; solo la cabecera azul arrastra la
+   rol o `Todos`. El buscador admite el nombre canónico y los títulos españoles verificados;
+   por ejemplo `Angela`, `La Maga de Fuego`, `Kaizer` y `Kaiser`. No intentes arrastrar desde el contenido; solo la cabecera azul arrastra la
   burbuja.
 - **El panel es más largo que la pantalla:** desliza dentro del panel. El panel no debe ocupar más
   del 72 % de la altura del teléfono.

@@ -37,6 +37,7 @@ class HeroIdentityTest {
         assertEquals(116, catalog.heroes.size)
         assertSame(catalog.findHero("Angela"), catalog.findHero("La Maga de Fuego"))
         assertSame(catalog.findHero("Dr Bian"), catalog.findHero("Dr. Bian"))
+        assertSame(catalog.findHero("Kaizer"), catalog.findHero("Kaiser"))
     }
 
     private fun catalog(): CounterCatalog {
