@@ -18,6 +18,8 @@ required_overlay = [
     "override fun onConfigurationChanged",
     "attachDrag(dragHandle",
     "showManualEditor",
+    "verification_actions_title",
+    "scoreboardScanButton?.isEnabled = state.selectedStage == AssistantStage.IN_GAME",
     "showHeroPicker",
     "InputMode.AUTO_SCAN",
     "InputMode.MANUAL",
@@ -32,6 +34,7 @@ for token in required_overlay:
 for label in [
     "Confirmar equipos antes de partida",
     "Verificar equipos e ítems",
+    "Corrección y verificación",
     "Editar equipo",
     "Quitar héroe",
 ]:

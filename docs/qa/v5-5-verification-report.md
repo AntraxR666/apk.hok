@@ -16,7 +16,7 @@
 - APK inspection: `AndroidManifest.xml`, `classes.dex`, `hok_counters.json`,
   and `hok_items.json` must be present; the merged manifest must exclude
   `INTERNET` and `ACCESS_NETWORK_STATE`.
-- Debug APK SHA-256: `55FC224E76D714FAC434A8C53A46E2B69E5864AA1C671FA9FA7AD1B56636524B`.
+- Debug APK SHA-256: `3E994B95D481A9DC3FBFEAFBF30A9694ECA02E29036019A6AA7847DAEBD11B81`.
 
 ## Safety and accuracy boundaries
 

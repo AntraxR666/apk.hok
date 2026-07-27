@@ -43,6 +43,7 @@ class OverlayService : Service() {
     private var playerPickLabelView: TextView? = null
     private var suggestionButton: Button? = null
     private var rescanButton: Button? = null
+    private var scoreboardScanButton: Button? = null
     private val playerSlotButtons = linkedMapOf<Int, Button>()
     private val playerPickButtons = linkedMapOf<PlayerPickOverride, Button>()
     private val inputModeButtons = linkedMapOf<InputMode, Button>()
@@ -221,6 +222,32 @@ class OverlayService : Service() {
             )
         )
 
+        // Keep the recovery actions above the slot and strategy details. During a live match
+        // the user must be able to reach them with one expansion and a short tap sequence.
+        panelContent.addView(sectionLabel(getString(R.string.verification_actions_title)))
+        panelContent.addView(
+            actionButton(getString(R.string.manual_editor_title)) {
+                showManualEditor(forceTenSlots = false)
+            }
+        )
+        panelContent.addView(
+            actionButton(getString(R.string.confirm_loading_roster)) {
+                root.visibility = View.INVISIBLE
+                sendCaptureAction(ScreenCaptureService.ACTION_CONFIRM_LOADING_ROSTER)
+                mainHandler.postDelayed({
+                    if (root.visibility != View.VISIBLE) root.visibility = View.VISIBLE
+                }, ONE_SHOT_OVERLAY_TIMEOUT_MS)
+            }
+        )
+        scoreboardScanButton = actionButton(getString(R.string.scan_scoreboard_items)) {
+            root.visibility = View.INVISIBLE
+            sendCaptureAction(ScreenCaptureService.ACTION_SCAN_SCOREBOARD)
+            mainHandler.postDelayed({
+                if (root.visibility != View.VISIBLE) root.visibility = View.VISIBLE
+            }, ONE_SHOT_OVERLAY_TIMEOUT_MS)
+        }
+        panelContent.addView(requireNotNull(scoreboardScanButton))
+
         suggestionButton = actionButton(getString(R.string.confirm_stage_change)) {
             AssistantSessionBus.state.suggestedStage?.let { sendStageAction(it) }
         }.apply { visibility = View.GONE }
@@ -259,24 +286,6 @@ class OverlayService : Service() {
             sendCaptureAction(ScreenCaptureService.ACTION_FORCE_SCAN)
         }
         panelContent.addView(buttonRow(requireNotNull(rescanButton)))
-        panelContent.addView(
-            actionButton(getString(R.string.confirm_loading_roster)) {
-                root.visibility = View.INVISIBLE
-                sendCaptureAction(ScreenCaptureService.ACTION_CONFIRM_LOADING_ROSTER)
-                mainHandler.postDelayed({
-                    if (root.visibility != View.VISIBLE) root.visibility = View.VISIBLE
-                }, ONE_SHOT_OVERLAY_TIMEOUT_MS)
-            }
-        )
-        panelContent.addView(
-            actionButton(getString(R.string.scan_scoreboard_items)) {
-                root.visibility = View.INVISIBLE
-                sendCaptureAction(ScreenCaptureService.ACTION_SCAN_SCOREBOARD)
-                mainHandler.postDelayed({
-                    if (root.visibility != View.VISIBLE) root.visibility = View.VISIBLE
-                }, ONE_SHOT_OVERLAY_TIMEOUT_MS)
-            }
-        )
         panelContent.addView(
             buttonRow(
                 actionButton(getString(R.string.swap_sides)) {
@@ -612,6 +621,8 @@ class OverlayService : Service() {
             }
         }
         rescanButton?.isEnabled = state.selectedStage == AssistantStage.DRAFT
+        scoreboardScanButton?.isEnabled = state.selectedStage == AssistantStage.IN_GAME
+        scoreboardScanButton?.alpha = if (state.selectedStage == AssistantStage.IN_GAME) 1f else 0.55f
         inputModeButtons.forEach { (mode, button) ->
             val base = if (mode == InputMode.AUTO_SCAN) {
                 getString(R.string.input_auto)

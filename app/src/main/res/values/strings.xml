@@ -69,6 +69,7 @@
     <string name="match_auto">Auto</string>
     <string name="match_ranked">Clasificatoria</string>
     <string name="match_normal">Normal</string>
+    <string name="verification_actions_title">Corrección y verificación</string>
     <string name="confirm_loading_roster">Confirmar equipos antes de partida</string>
     <string name="scan_scoreboard_items">Verificar equipos e ítems</string>
     <string name="edit_team">Editar equipo</string>
