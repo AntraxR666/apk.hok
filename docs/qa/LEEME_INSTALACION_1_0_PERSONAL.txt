@@ -9,3 +9,6 @@ HoK Draft Assistant 1.0 Personal - Huawei JKM-LX3
    sigue siendo necesaria antes de declarar la candidata final.
 
 El APK no solicita INTERNET ni ACCESS_NETWORK_STATE.
+
+Para las instrucciones de uso de Seleccion, la pantalla de carga y el marcador de la partida,
+abre GUIA_USO_1_0_PERSONAL_JKM_LX3.md incluida junto al APK.

@@ -274,7 +274,11 @@ class ScreenCaptureService : Service() {
                     val learned = assignManualSlot(side, slotIndex, heroName, teachLoading)
                     publishCurrent(
                         if (learned) {
-                            "Corrección confirmada; se aprendió esta tarjeta de carga localmente"
+                            if (teachLoading) {
+                                "Corrección confirmada; se aprendió esta tarjeta de carga localmente"
+                            } else {
+                                "Corrección guardada; se aprendió este retrato de selección localmente"
+                            }
                         } else {
                             "Slot manual actualizado"
                         }
@@ -917,8 +921,12 @@ class ScreenCaptureService : Service() {
     ): Boolean {
         manualAssignments = manualAssignments.assign(side, slotIndex, heroName)
         syncLegacyManualSets()
-        if (!teachLoading || !loadingConfirmationReview || lastSubphase != DraftSubphase.LOADING) {
-            return false
+        val templateDomain = when {
+            teachLoading && loadingConfirmationReview &&
+                lastSubphase == DraftSubphase.LOADING ->
+                PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+            selectedStage == AssistantStage.DRAFT -> PortraitTemplateDomain.DRAFT_PORTRAIT
+            else -> return false
         }
         val fingerprint = lastSlotFingerprints.firstOrNull {
             it.side == side && it.slotIndex == slotIndex
@@ -926,7 +934,7 @@ class ScreenCaptureService : Service() {
         val learned = visionEngine.learnPortrait(
             heroName,
             fingerprint,
-            PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+            templateDomain
         )
         if (learned) {
             learnedPortraitCount++

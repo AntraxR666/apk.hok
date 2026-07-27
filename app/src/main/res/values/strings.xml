@@ -71,9 +71,11 @@
     <string name="match_normal">Normal</string>
     <string name="verification_actions_title">Corrección y verificación</string>
     <string name="confirm_loading_roster">Confirmar equipos antes de partida</string>
-    <string name="scan_scoreboard_items">Verificar equipos e ítems</string>
+    <string name="scan_scoreboard_items">Verificar equipos y actualizar compra</string>
     <string name="edit_team">Editar equipo</string>
     <string name="manual_editor_title">Editar héroes manualmente</string>
+    <string name="search_heroes">Buscar por nombre o título</string>
+    <string name="no_hero_matches">No hay héroes que coincidan con esa búsqueda.</string>
     <string name="back_to_summary">Volver al resumen</string>
     <string name="back_to_team_editor">Volver al equipo</string>
     <string name="ally_short">Aliado</string>

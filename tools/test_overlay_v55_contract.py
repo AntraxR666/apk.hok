@@ -19,8 +19,11 @@ required_overlay = [
     "attachDrag(dragHandle",
     "showManualEditor",
     "verification_actions_title",
+    "loadingRosterButton?.isEnabled = state.selectedStage == AssistantStage.DRAFT",
     "scoreboardScanButton?.isEnabled = state.selectedStage == AssistantStage.IN_GAME",
     "showHeroPicker",
+    "CounterCatalog.normalize(query)",
+    "setOverlayFocusable(true)",
     "InputMode.AUTO_SCAN",
     "InputMode.MANUAL",
     "MatchMode.NORMAL_BLIND",
@@ -33,10 +36,11 @@ for token in required_overlay:
 
 for label in [
     "Confirmar equipos antes de partida",
-    "Verificar equipos e ítems",
+    "Verificar equipos y actualizar compra",
     "Corrección y verificación",
     "Editar equipo",
     "Quitar héroe",
+    "Buscar por nombre o título",
 ]:
     assert label in strings, f"Missing user-visible label: {label}"
 
@@ -58,4 +62,6 @@ for token in required_capture:
     assert token in capture, f"Missing capture-service command: {token}"
 
 assert "PortraitTemplateDomain.LOADING_CARD_PORTRAIT" in capture
+assert "PortraitTemplateDomain.DRAFT_PORTRAIT" in capture
+assert "se aprendió este retrato de selección localmente" in capture
 print("OVERLAY_V55_CONTRACT_OK")

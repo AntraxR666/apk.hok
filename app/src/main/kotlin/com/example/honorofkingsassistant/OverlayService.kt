@@ -1,8 +1,9 @@
 package com.example.honorofkingsassistant
 
 import android.app.Service
-import android.content.res.Configuration
 import android.content.Intent
+import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
@@ -11,6 +12,8 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.provider.Settings
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -18,10 +21,12 @@ import android.view.ViewConfiguration
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.view.inputmethod.InputMethodManager
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -43,6 +48,7 @@ class OverlayService : Service() {
     private var playerPickLabelView: TextView? = null
     private var suggestionButton: Button? = null
     private var rescanButton: Button? = null
+    private var loadingRosterButton: Button? = null
     private var scoreboardScanButton: Button? = null
     private val playerSlotButtons = linkedMapOf<Int, Button>()
     private val playerPickButtons = linkedMapOf<PlayerPickOverride, Button>()
@@ -230,15 +236,14 @@ class OverlayService : Service() {
                 showManualEditor(forceTenSlots = false)
             }
         )
-        panelContent.addView(
-            actionButton(getString(R.string.confirm_loading_roster)) {
+        loadingRosterButton = actionButton(getString(R.string.confirm_loading_roster)) {
                 root.visibility = View.INVISIBLE
                 sendCaptureAction(ScreenCaptureService.ACTION_CONFIRM_LOADING_ROSTER)
                 mainHandler.postDelayed({
                     if (root.visibility != View.VISIBLE) root.visibility = View.VISIBLE
                 }, ONE_SHOT_OVERLAY_TIMEOUT_MS)
             }
-        )
+        panelContent.addView(requireNotNull(loadingRosterButton))
         scoreboardScanButton = actionButton(getString(R.string.scan_scoreboard_items)) {
             root.visibility = View.INVISIBLE
             sendCaptureAction(ScreenCaptureService.ACTION_SCAN_SCOREBOARD)
@@ -459,10 +464,12 @@ class OverlayService : Service() {
     private fun showMainPanel() {
         mainPanelContent?.visibility = View.VISIBLE
         manualEditorContent?.visibility = View.GONE
+        setOverlayFocusable(false)
     }
 
     private fun showManualEditor(forceTenSlots: Boolean) {
         val editor = manualEditorContent ?: return
+        setOverlayFocusable(false)
         val state = AssistantSessionBus.state
         val effectiveMode = if (forceTenSlots) {
             MatchMode.RANKED_DRAFT
@@ -525,9 +532,25 @@ class OverlayService : Service() {
         val heroesContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
-        fun renderHeroes(role: String?) {
+        var selectedRole: String? = null
+        var query = ""
+        fun renderHeroes() {
             heroesContainer.removeAllViews()
-            counterEngine.heroesForRole(role).forEach { hero ->
+            val normalizedQuery = CounterCatalog.normalize(query)
+            val matches = counterEngine.heroesForRole(selectedRole).filter { hero ->
+                normalizedQuery.isBlank() || sequenceOf(hero.name, hero.id)
+                    .plus(hero.allRecognitionAliases().asSequence())
+                    .map(CounterCatalog::normalize)
+                    .any { normalizedQuery in it }
+            }
+            if (matches.isEmpty()) {
+                heroesContainer.addView(
+                    overlayText(12f, false).apply {
+                        text = getString(R.string.no_hero_matches)
+                    }
+                )
+            }
+            matches.forEach { hero ->
                 val title = hero.identityAliases.displayTitles.firstOrNull()
                 val label = if (title == null) hero.name else "${hero.name} · $title"
                 heroesContainer.addView(
@@ -539,24 +562,81 @@ class OverlayService : Service() {
                 )
             }
         }
+        val searchInput = EditText(this).apply {
+            hint = getString(R.string.search_heroes)
+            setTextColor(Color.WHITE)
+            setHintTextColor(Color.LTGRAY)
+            textSize = 13f
+            isSingleLine = true
+            setPadding(dp(8), dp(2), dp(8), dp(2))
+            setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus) setOverlayFocusable(true)
+            }
+            addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(text: CharSequence?, start: Int, count: Int, after: Int) = Unit
+
+                override fun onTextChanged(text: CharSequence?, start: Int, before: Int, count: Int) = Unit
+
+                override fun afterTextChanged(text: Editable?) {
+                    query = text?.toString().orEmpty()
+                    renderHeroes()
+                }
+            })
+        }
+        editor.addView(searchInput)
         editor.addView(sectionLabel(getString(R.string.filter_role)))
         editor.addView(
             buttonRow(
-                actionButton(getString(R.string.role_all)) { renderHeroes(null) },
-                actionButton(getString(R.string.role_clash)) { renderHeroes("Clash Lane") },
-                actionButton(getString(R.string.role_mid)) { renderHeroes("Mid Lane") }
+                actionButton(getString(R.string.role_all)) {
+                    selectedRole = null
+                    renderHeroes()
+                },
+                actionButton(getString(R.string.role_clash)) {
+                    selectedRole = "Clash Lane"
+                    renderHeroes()
+                },
+                actionButton(getString(R.string.role_mid)) {
+                    selectedRole = "Mid Lane"
+                    renderHeroes()
+                }
             )
         )
         editor.addView(
             buttonRow(
-                actionButton(getString(R.string.role_farm)) { renderHeroes("Farm Lane") },
-                actionButton(getString(R.string.role_jungle)) { renderHeroes("Jungler") },
-                actionButton(getString(R.string.role_roam)) { renderHeroes("Roamer/Support") }
+                actionButton(getString(R.string.role_farm)) {
+                    selectedRole = "Farm Lane"
+                    renderHeroes()
+                },
+                actionButton(getString(R.string.role_jungle)) {
+                    selectedRole = "Jungler"
+                    renderHeroes()
+                },
+                actionButton(getString(R.string.role_roam)) {
+                    selectedRole = "Roamer/Support"
+                    renderHeroes()
+                }
             )
         )
         editor.addView(heroesContainer)
-        renderHeroes(null)
+        renderHeroes()
         panelView?.scrollTo(0, 0)
+    }
+
+    private fun setOverlayFocusable(focusable: Boolean) {
+        val root = rootView ?: return
+        val layoutParams = params ?: return
+        val updatedFlags = if (focusable) {
+            layoutParams.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+        } else {
+            layoutParams.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+        }
+        if (updatedFlags == layoutParams.flags) return
+        layoutParams.flags = updatedFlags
+        if (!focusable) {
+            (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
+                ?.hideSoftInputFromWindow(root.windowToken, 0)
+        }
+        runCatching { windowManager.updateViewLayout(root, layoutParams) }
     }
 
     private fun rosterHeroAt(state: AssistantUiState, slot: ManualTeamSlot): String? {
@@ -621,6 +701,8 @@ class OverlayService : Service() {
             }
         }
         rescanButton?.isEnabled = state.selectedStage == AssistantStage.DRAFT
+        loadingRosterButton?.isEnabled = state.selectedStage == AssistantStage.DRAFT
+        loadingRosterButton?.alpha = if (state.selectedStage == AssistantStage.DRAFT) 1f else 0.55f
         scoreboardScanButton?.isEnabled = state.selectedStage == AssistantStage.IN_GAME
         scoreboardScanButton?.alpha = if (state.selectedStage == AssistantStage.IN_GAME) 1f else 0.55f
         inputModeButtons.forEach { (mode, button) ->
