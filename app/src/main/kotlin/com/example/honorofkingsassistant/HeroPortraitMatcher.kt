@@ -106,10 +106,29 @@ class HeroPortraitMatcher(
     fun matchSlots(
         fingerprints: List<SlotPortraitFingerprint>,
         domain: PortraitTemplateDomain = PortraitTemplateDomain.DRAFT_PORTRAIT
-    ): List<SlotHeroMatch> {
+    ): List<SlotHeroMatch> = acceptedMatches(rankSlots(fingerprints, domain))
+
+    fun acceptedMatches(
+        evidence: List<SlotRecognitionEvidence>
+    ): List<SlotHeroMatch> = evidence.mapNotNull { item ->
+        val accepted = item.acceptedHeroName ?: return@mapNotNull null
+        val candidate = item.candidates.firstOrNull {
+            CounterCatalog.normalize(it.heroName) == CounterCatalog.normalize(accepted)
+        } ?: return@mapNotNull null
+        SlotHeroMatch(
+            heroName = accepted,
+            side = item.side,
+            slotIndex = item.slotIndex,
+            confidence = candidate.confidence
+        )
+    }
+
+    fun rankSlots(
+        fingerprints: List<SlotPortraitFingerprint>,
+        domain: PortraitTemplateDomain = PortraitTemplateDomain.DRAFT_PORTRAIT
+    ): List<SlotRecognitionEvidence> {
         val templates = store.templates(domain)
-        if (templates.isEmpty()) return emptyList()
-        return fingerprints.mapNotNull slotLoop@ { slot ->
+        return fingerprints.map { slot ->
             val candidates = templates.mapNotNull { (normalizedHero, heroTemplates) ->
                 val hero = catalog.heroes.firstOrNull {
                     CounterCatalog.normalize(it.name) == normalizedHero
@@ -122,12 +141,28 @@ class HeroPortraitMatcher(
                     visualConfidence = slot.visualConfidence
                 )
             }
-            val best = PortraitMatchSelector.select(candidates) ?: return@slotLoop null
-            SlotHeroMatch(
-                heroName = best.heroName,
+            val accepted = PortraitMatchSelector.select(candidates)
+            val ranked = PortraitMatchSelector.rank(candidates).map { match ->
+                SlotRecognitionCandidate(
+                    heroName = match.heroName,
+                    distance = match.distance,
+                    confidence = if (
+                        accepted != null &&
+                        CounterCatalog.normalize(match.heroName) ==
+                        CounterCatalog.normalize(accepted.heroName)
+                    ) {
+                        accepted.confidence
+                    } else {
+                        match.confidence
+                    }
+                )
+            }
+            SlotRecognitionEvidence(
                 side = slot.side,
                 slotIndex = slot.slotIndex,
-                confidence = best.confidence
+                visualConfidence = slot.visualConfidence,
+                candidates = ranked,
+                acceptedHeroName = accepted?.heroName
             )
         }
     }

@@ -137,6 +137,13 @@ class RankedFixtureRasterTest {
             ambiguousStore
         )
 
+        val ambiguousEvidence = ambiguousMatcher.rankSlots(
+            listOf(slot),
+            PortraitTemplateDomain.LOADING_CARD_PORTRAIT
+        ).single()
+
+        assertEquals(null, ambiguousEvidence.acceptedHeroName)
+        assertEquals(listOf("Angela", "Lam"), ambiguousEvidence.candidates.map { it.heroName })
         assertTrue(
             ambiguousMatcher.matchSlots(
                 listOf(slot),

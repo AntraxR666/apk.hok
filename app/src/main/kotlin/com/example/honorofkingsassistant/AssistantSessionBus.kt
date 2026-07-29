@@ -26,6 +26,7 @@ data class AssistantUiState(
     val recognition: RecognitionCalibrationState = RecognitionCalibrationState.UNCALIBRATED,
     val loadingRosterReconciliation: LoadingRosterReconciliationResult? = null,
     val manualAssignments: ManualTeamAssignments = ManualTeamAssignments(),
+    val slotRecognition: List<SlotRecognitionState> = emptyList(),
     val loadingConfirmationReview: Boolean = false,
     val diagnostics: VisionDiagnostics = VisionDiagnostics(),
     val lastUpdatedAtMs: Long = System.currentTimeMillis()

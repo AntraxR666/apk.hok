@@ -152,9 +152,12 @@ class DraftVisionEngine(
                                     portraitMatcher.normalFingerprints(bitmap)
                             }
                         }.getOrElse { emptyList() }
-                        val portraitMatches = portraitMatcher.matchSlots(
+                        val slotRecognitionEvidence = portraitMatcher.rankSlots(
                             slotFingerprints,
                             portraitPlan.templateDomain
+                        )
+                        val portraitMatches = portraitMatcher.acceptedMatches(
+                            slotRecognitionEvidence
                         )
                         val portraitCandidates = if (
                             modeVisuals.subphase == DraftSubphase.LOADING
@@ -227,6 +230,7 @@ class DraftVisionEngine(
                                     null
                                 },
                                 slotFingerprints = slotFingerprints,
+                                slotRecognitionEvidence = slotRecognitionEvidence,
                                 recognition = portraitTemplateStore.calibrationState(),
                                 loadingRosterEvidence = loadingRosterEvidence,
                                 diagnostics = diagnostics

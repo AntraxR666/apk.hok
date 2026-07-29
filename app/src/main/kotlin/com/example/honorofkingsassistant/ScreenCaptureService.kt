@@ -31,6 +31,7 @@ class ScreenCaptureService : Service() {
     private lateinit var recommendationEngine: DraftRecommendationEngine
     private lateinit var strategyEngine: StrategyEngine
     private lateinit var tracker: TemporalDraftTracker
+    private lateinit var slotRecognitionTracker: SlotRecognitionTracker
     private lateinit var visionEngine: DraftVisionEngine
     private lateinit var scoreboardAnalyzer: ScoreboardBitmapAnalyzer
     private lateinit var scoreboardReconciler: ScoreboardReconciler
@@ -61,6 +62,7 @@ class ScreenCaptureService : Service() {
     private var manualPlayerSlotIndex: Int? = null
     private var playerPickOverride: PlayerPickOverride = PlayerPickOverride.AUTO
     private var lastSlotFingerprints: List<SlotPortraitFingerprint> = emptyList()
+    private var lastSlotRecognition: List<SlotRecognitionState> = emptyList()
     private var learnedPortraitCount = 0
     private var lastRecognition = RecognitionCalibrationState.UNCALIBRATED
     private var lastLoadingRosterReconciliation: LoadingRosterReconciliationResult? = null
@@ -84,6 +86,7 @@ class ScreenCaptureService : Service() {
             historySize = 5,
             minimumObservationConfidence = 0.55
         )
+        slotRecognitionTracker = SlotRecognitionTracker(requiredHits = 3, historySize = 5)
         boardStabilizer = DraftBoardTemporalStabilizer(requiredConfirmationFrames = 3)
         playerSlotResolver = PlayerSlotResolver(requiredHits = 4, maxMisses = 4)
         manualPlayerSlotIndex = AssistantPreferences.getManualPlayerSlot(this)
@@ -136,6 +139,7 @@ class ScreenCaptureService : Service() {
                     inputMode = requested
                     AssistantPreferences.setInputMode(this, inputMode)
                     tracker.reset()
+                    slotRecognitionTracker.reset()
                     boardStabilizer.reset()
                     playerSlotResolver.reset()
                     lastVisionSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
@@ -148,6 +152,7 @@ class ScreenCaptureService : Service() {
                     )
                     lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
                     lastSlotFingerprints = emptyList()
+                    lastSlotRecognition = slotRecognitionTracker.current()
                 }
                 publishCurrent(
                     if (inputMode == InputMode.MANUAL) {
@@ -166,11 +171,13 @@ class ScreenCaptureService : Service() {
                     AssistantPreferences.setMatchMode(this, requested)
                     matchMode = visionEngine.setMatchModePreference(requested)
                     tracker.reset()
+                    slotRecognitionTracker.reset()
                     boardStabilizer.reset()
                     playerSlotResolver.reset()
                     lastVisionSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
                     lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
                     lastSlotFingerprints = emptyList()
+                    lastSlotRecognition = slotRecognitionTracker.current()
                     lastBoard = DraftBoardState.empty(
                         if (matchMode.effective == MatchMode.AUTO) {
                             ScreenMode.UNKNOWN
@@ -195,6 +202,7 @@ class ScreenCaptureService : Service() {
                     enemyOnRight = !enemyOnRight
                     visionEngine.setEnemyOnRight(enemyOnRight)
                     tracker.reset()
+                    slotRecognitionTracker.reset()
                     boardStabilizer.reset()
                     playerSlotResolver.reset()
                     lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
@@ -203,6 +211,7 @@ class ScreenCaptureService : Service() {
                     lastScreenMode = ScreenMode.DRAFT
                     lastSubphase = DraftSubphase.UNKNOWN
                     suggestedStage = null
+                    lastSlotRecognition = slotRecognitionTracker.current()
                 }
                 publishCurrent("Lados intercambiados; esperando confirmaciones nuevas")
                 return START_NOT_STICKY
@@ -416,6 +425,8 @@ class ScreenCaptureService : Service() {
         lastScreenMode = ScreenMode.UNKNOWN
         lastSubphase = DraftSubphase.UNKNOWN
         lastSlotFingerprints = emptyList()
+        slotRecognitionTracker.reset()
+        lastSlotRecognition = slotRecognitionTracker.current()
         lastLoadingRosterReconciliation = null
         manualAssignments = ManualTeamAssignments()
         pendingLoadingConfirmation = false
@@ -562,12 +573,14 @@ class ScreenCaptureService : Service() {
                 matchMode = result.matchMode
                 if (matchMode.effective != previousEffectiveMatchMode) {
                     tracker.reset()
+                    slotRecognitionTracker.reset()
                     boardStabilizer.reset()
                     playerSlotResolver.reset()
                     lastVisionSnapshot = DraftSnapshot(emptyList(), emptyList(), emptyList())
                     lastBoard = DraftBoardState.empty(result.screenMode)
                     lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
                     lastSlotFingerprints = emptyList()
+                    lastSlotRecognition = slotRecognitionTracker.current()
                     lastLoadingRosterReconciliation = null
                 }
                 suggestedStage = AssistantStagePolicy.suggest(
@@ -585,6 +598,10 @@ class ScreenCaptureService : Service() {
                                     manualPlayerSlotIndex
                                 )
                                 lastSlotFingerprints = result.slotFingerprints
+                                lastSlotRecognition = slotRecognitionTracker.observe(
+                                    result.slotRecognitionEvidence,
+                                    lastBoard
+                                )
                             }
                             MatchMode.NORMAL_BLIND -> {
                                 lastBoard = result.board
@@ -593,6 +610,8 @@ class ScreenCaptureService : Service() {
                                     manualPlayerSlotIndex
                                 )
                                 lastSlotFingerprints = emptyList()
+                                slotRecognitionTracker.reset()
+                                lastSlotRecognition = slotRecognitionTracker.current()
                             }
                             MatchMode.AUTO -> Unit
                         }
@@ -601,6 +620,8 @@ class ScreenCaptureService : Service() {
                         lastBoard = DraftBoardState.empty(ScreenMode.DRAFT)
                         lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
                         lastSlotFingerprints = emptyList()
+                        slotRecognitionTracker.reset()
+                        lastSlotRecognition = slotRecognitionTracker.current()
                     }
                 }
                 if (matchMode.effective != MatchMode.AUTO &&
@@ -880,6 +901,7 @@ class ScreenCaptureService : Service() {
             recognition = lastRecognition,
             loadingRosterReconciliation = lastLoadingRosterReconciliation,
             manualAssignments = manualAssignments,
+            slotRecognition = lastSlotRecognition,
             loadingConfirmationReview = loadingConfirmationReview,
             diagnostics = lastVisionDiagnostics
         )

@@ -80,6 +80,7 @@ data class DraftVisionResult(
     val subphase: DraftSubphase = DraftSubphase.UNKNOWN,
     val playerSlot: PlayerSlotDetection? = null,
     val slotFingerprints: List<SlotPortraitFingerprint> = emptyList(),
+    val slotRecognitionEvidence: List<SlotRecognitionEvidence> = emptyList(),
     val recognition: RecognitionCalibrationState = RecognitionCalibrationState.UNCALIBRATED,
     val loadingRosterEvidence: List<LoadingRosterCardEvidence> = emptyList(),
     val diagnostics: VisionDiagnostics = VisionDiagnostics()
