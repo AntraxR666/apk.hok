@@ -16,9 +16,10 @@ assert 'shouldProcessFrames' in capture
 assert 'updateCaptureSurfaceForStage' in capture
 assert 'display.setSurface(targetSurface)' in capture
 assert 'suggestedStage' in bus
-assert 'sendStageAction(AssistantStage.DRAFT)' in overlay
-assert 'sendStageAction(AssistantStage.IN_GAME)' in overlay
-assert 'sendStageAction(AssistantStage.PAUSED)' in overlay
+for stage_name in ('DRAFT', 'IN_GAME', 'PAUSED'):
+    assert f'stageButton(AssistantStage.{stage_name}' in overlay, stage_name
+assert 'sendStageAction(stage)' in overlay
+assert 'stageButtons.forEach' in overlay
 assert 'confirm_switch_to_game' in overlay
 for view_id in ('draftModeButton', 'gameModeButton', 'pauseModeButton'):
     assert f'@+id/{view_id}' in layout, view_id

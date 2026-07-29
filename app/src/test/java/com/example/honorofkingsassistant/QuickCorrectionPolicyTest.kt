@@ -68,6 +68,134 @@ class QuickCorrectionPolicyTest {
         assertTrue(QuickCorrectionPolicy.hasActionableProblem(listOf(uncertain)))
     }
 
+    @Test
+    fun resolvingActivePromptAdvancesToNextUnresolvedSlot() {
+        val states = listOf(
+            state(TeamSide.ALLY, 2, SlotRecognitionStatus.UNCERTAIN),
+            state(TeamSide.ENEMY, 1, SlotRecognitionStatus.NOT_DETECTED)
+        )
+        val active = requireNotNull(QuickCorrectionPolicy.correctionRequest(true, states))
+        val manual = ManualTeamAssignments().assign(TeamSide.ALLY, 2, "Angela")
+
+        val next = QuickCorrectionPolicy.afterManualAssignment(
+            activeRequest = active,
+            assignedSlot = active.slot,
+            states = states,
+            manualAssignments = manual
+        )
+
+        assertEquals(ManualTeamSlot(TeamSide.ENEMY, 1), next?.slot)
+    }
+
+    @Test
+    fun resolvingLastPromptEndsCorrectionFlow() {
+        val states = listOf(
+            state(TeamSide.ALLY, 2, SlotRecognitionStatus.UNCERTAIN)
+        )
+        val active = requireNotNull(QuickCorrectionPolicy.correctionRequest(true, states))
+        val manual = ManualTeamAssignments().assign(TeamSide.ALLY, 2, "Angela")
+
+        assertNull(
+            QuickCorrectionPolicy.afterManualAssignment(
+                activeRequest = active,
+                assignedSlot = active.slot,
+                states = states,
+                manualAssignments = manual
+            )
+        )
+    }
+
+    @Test
+    fun unrelatedManualEditDoesNotConsumeOrReplaceActivePrompt() {
+        val states = listOf(
+            state(TeamSide.ALLY, 2, SlotRecognitionStatus.UNCERTAIN),
+            state(TeamSide.ENEMY, 1, SlotRecognitionStatus.NOT_DETECTED)
+        )
+        val active = requireNotNull(QuickCorrectionPolicy.correctionRequest(true, states))
+        val manual = ManualTeamAssignments().assign(TeamSide.ENEMY, 1, "Lam")
+
+        assertEquals(
+            active,
+            QuickCorrectionPolicy.afterManualAssignment(
+                activeRequest = active,
+                assignedSlot = ManualTeamSlot(TeamSide.ENEMY, 1),
+                states = states,
+                manualAssignments = manual
+            )
+        )
+    }
+
+    @Test
+    fun candidateAlreadyAssignedToAnotherSlotOnSameTeamIsNotOfferedAgain() {
+        val states = QuickCorrectionPolicy.applyManualAuthority(
+            states = listOf(
+                state(TeamSide.ALLY, 1, SlotRecognitionStatus.DETECTED, "Lam"),
+                state(
+                    TeamSide.ALLY,
+                    2,
+                    SlotRecognitionStatus.UNCERTAIN,
+                    candidates = listOf(
+                        SlotRecognitionCandidate("Angela", 0.12, 0.72),
+                        SlotRecognitionCandidate("Li Bai", 0.15, 0.65)
+                    )
+                )
+            ),
+            manualAssignments = ManualTeamAssignments()
+                .assign(TeamSide.ALLY, 1, "Ángela")
+        )
+
+        val request = requireNotNull(
+            QuickCorrectionPolicy.correctionRequest(true, states)
+        )
+
+        assertEquals(listOf("Li Bai"), request.candidates.map { it.heroName })
+    }
+
+    @Test
+    fun candidateAlreadyDetectedInAnotherSlotOnSameTeamIsNotOfferedAgain() {
+        val states = listOf(
+            state(TeamSide.ALLY, 1, SlotRecognitionStatus.DETECTED, "Angela"),
+            state(
+                TeamSide.ALLY,
+                2,
+                SlotRecognitionStatus.UNCERTAIN,
+                candidates = listOf(
+                    SlotRecognitionCandidate("Angela", 0.12, 0.72),
+                    SlotRecognitionCandidate("Li Bai", 0.15, 0.65)
+                )
+            )
+        )
+
+        val request = requireNotNull(
+            QuickCorrectionPolicy.correctionRequest(true, states)
+        )
+
+        assertEquals(listOf("Li Bai"), request.candidates.map { it.heroName })
+    }
+
+    @Test
+    fun manualHeroClaimAtOneSlotRevokesAutomaticDuplicateAtAnotherSlot() {
+        val presented = QuickCorrectionPolicy.applyManualAuthority(
+            states = listOf(
+                state(TeamSide.ALLY, 1, SlotRecognitionStatus.DETECTED, "Angela"),
+                state(TeamSide.ALLY, 2, SlotRecognitionStatus.UNCERTAIN)
+            ),
+            manualAssignments = ManualTeamAssignments()
+                .assign(TeamSide.ALLY, 2, "Angela")
+        )
+
+        val allyOne = presented.first { it.side == TeamSide.ALLY && it.slotIndex == 1 }
+        val allyTwo = presented.first { it.side == TeamSide.ALLY && it.slotIndex == 2 }
+        assertEquals(SlotRecognitionStatus.NOT_DETECTED, allyOne.status)
+        assertNull(allyOne.heroName)
+        assertEquals(SlotRecognitionStatus.MANUAL, allyTwo.status)
+        assertEquals("Angela", allyTwo.heroName)
+        assertEquals(
+            listOf("Angela"),
+            ConfirmedSlotSnapshotPolicy.from(presented).allies.map { it.heroName }
+        )
+    }
+
     private fun state(
         side: TeamSide,
         slot: Int,

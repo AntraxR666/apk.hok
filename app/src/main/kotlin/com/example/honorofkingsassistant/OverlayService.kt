@@ -56,6 +56,7 @@ class OverlayService : Service() {
     private val playerPickButtons = linkedMapOf<PlayerPickOverride, Button>()
     private val inputModeButtons = linkedMapOf<InputMode, Button>()
     private val matchModeButtons = linkedMapOf<MatchMode, Button>()
+    private val stageButtons = linkedMapOf<AssistantStage, Button>()
     private var params: WindowManager.LayoutParams? = null
     private var lastRenderedStage: AssistantStage? = null
     private var lastQuickCorrectionKey: String? = null
@@ -119,7 +120,12 @@ class OverlayService : Service() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(6), dp(6), dp(6), dp(6))
+            setPadding(
+                dp(ROOT_PADDING_DP),
+                dp(ROOT_PADDING_DP),
+                dp(ROOT_PADDING_DP),
+                dp(ROOT_PADDING_DP)
+            )
             background = panelBackground(COLLAPSED_ALPHA)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) elevation = dp(10).toFloat()
         }
@@ -202,6 +208,15 @@ class OverlayService : Service() {
         panelContent.addView(statusView)
         panelContent.addView(requireNotNull(diagnosticsView))
 
+        panelContent.addView(sectionLabel(getString(R.string.primary_stage_title)))
+        panelContent.addView(
+            buttonRow(
+                stageButton(AssistantStage.DRAFT, getString(R.string.mode_draft_short)),
+                stageButton(AssistantStage.IN_GAME, getString(R.string.mode_game_short)),
+                stageButton(AssistantStage.PAUSED, getString(R.string.mode_pause_short))
+            )
+        )
+
         // Primary live flow: scan, see every slot, fix only the one that needs attention.
         rescanButton = actionButton(getString(R.string.scan_draft_now)) {
             sendCaptureAction(ScreenCaptureService.ACTION_FORCE_SCAN)
@@ -277,21 +292,6 @@ class OverlayService : Service() {
                 matchModeButton(MatchMode.NORMAL_BLIND, getString(R.string.match_normal))
             )
         )
-        advancedControls.addView(sectionLabel(getString(R.string.manual_stage_title)))
-        advancedControls.addView(
-            buttonRow(
-                actionButton(getString(R.string.mode_draft_short)) {
-                    sendStageAction(AssistantStage.DRAFT)
-                },
-                actionButton(getString(R.string.mode_game_short)) {
-                    sendStageAction(AssistantStage.IN_GAME)
-                },
-                actionButton(getString(R.string.mode_pause_short)) {
-                    sendStageAction(AssistantStage.PAUSED)
-                }
-            )
-        )
-
         playerSlotLabelView = sectionLabel(getString(R.string.player_slot_auto))
         advancedControls.addView(playerSlotLabelView)
         val firstSlotRow = buttonRow(
@@ -390,6 +390,10 @@ class OverlayService : Service() {
         sendMatchModeAction(mode)
     }.also { matchModeButtons[mode] = it }
 
+    private fun stageButton(stage: AssistantStage, label: String): Button = actionButton(label) {
+        sendStageAction(stage)
+    }.also { stageButtons[stage] = it }
+
     private fun buttonRow(vararg buttons: Button): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         buttons.forEach { button ->
@@ -464,7 +468,12 @@ class OverlayService : Service() {
 
     private fun maxOverlayPanelHeight(): Int {
         val (_, height) = availableDisplaySize()
-        return (height * MAX_PANEL_HEIGHT_RATIO).roundToInt().coerceAtLeast(dp(120))
+        return OverlayPanelGeometry.maxScrollHeight(
+            availableHeightPx = height,
+            density = resources.displayMetrics.density,
+            totalHeightRatio = MAX_PANEL_HEIGHT_RATIO,
+            chromeHeightDp = DRAG_HANDLE_HEIGHT_DP + (ROOT_PADDING_DP * 2)
+        )
     }
 
     private fun updatePanelBoundsAndClamp() {
@@ -791,12 +800,13 @@ class OverlayService : Service() {
     }
 
     private fun rosterHeroAt(state: AssistantUiState, slot: ManualTeamSlot): String? {
-        val loading = state.loadingRosterReconciliation?.assignments?.firstOrNull {
-            it.side == slot.side && it.slotIndex == slot.slotIndex
-        }?.heroName
-        if (loading != null) return loading
-        val heroes = if (slot.side == TeamSide.ALLY) state.snapshot.allies else state.snapshot.enemies
-        return heroes.getOrNull(slot.slotIndex - 1)?.heroName
+        return RosterSlotIdentityPolicy.resolve(
+            slot = slot,
+            loadingRoster = state.loadingRosterReconciliation,
+            manualAssignments = state.manualAssignments,
+            slotRecognition = state.slotRecognition,
+            snapshot = state.snapshot
+        )
     }
 
     @Suppress("DEPRECATION")
@@ -880,6 +890,14 @@ class OverlayService : Service() {
                 MatchMode.NORMAL_BLIND -> getString(R.string.match_normal)
             }
             button.text = if (mode == state.matchMode.preference) "✓ $base" else base
+        }
+        stageButtons.forEach { (stage, button) ->
+            val base = when (stage) {
+                AssistantStage.DRAFT -> getString(R.string.mode_draft_short)
+                AssistantStage.IN_GAME -> getString(R.string.mode_game_short)
+                AssistantStage.PAUSED -> getString(R.string.mode_pause_short)
+            }
+            button.text = if (stage == state.selectedStage) "✓ $base" else base
         }
 
         val suggested = state.suggestedStage
@@ -1152,6 +1170,7 @@ class OverlayService : Service() {
         const val EXPANDED_ALPHA = 0.82f
         const val MAX_PANEL_HEIGHT_RATIO = 0.72f
         const val DRAG_HANDLE_HEIGHT_DP = 48
+        const val ROOT_PADDING_DP = 6
         const val MIN_TOUCH_TARGET_DP = 48
         private const val ONE_SHOT_OVERLAY_TIMEOUT_MS = 10_500L
         private const val UI_REFRESH_DELAY_MS = 120L

@@ -67,15 +67,16 @@ class SlotRecognitionTracker(
         val newlyOccupied = occupied - activeKeys
         if (newlyOccupied.isNotEmpty()) removeHistoryFor(newlyOccupied)
 
+        val frameBySlot = frame
+            .filter { SlotKey(it.side, it.slotIndex) in occupied }
+            .associateBy { SlotKey(it.side, it.slotIndex) }
+
         activeFrames.keys.retainAll(occupied)
         occupied.forEach { key ->
             activeFrames[key] = (activeFrames[key] ?: 0) + 1
         }
         activeKeys = occupied
 
-        val frameBySlot = frame
-            .filter { SlotKey(it.side, it.slotIndex) in occupied }
-            .associateBy { SlotKey(it.side, it.slotIndex) }
         history.addLast(frameBySlot)
         while (history.size > historySize) history.removeFirst()
 
@@ -108,6 +109,10 @@ class SlotRecognitionTracker(
             item.acceptedHeroName?.let { name -> name to candidateConfidence(item, name) }
         }
         val acceptedGroups = accepted.groupBy { CounterCatalog.normalize(it.first) }
+        val latestFrameEvidence = history.lastOrNull()?.get(key)
+        val explicitlyAmbiguous = latestFrameEvidence != null &&
+            latestFrameEvidence.acceptedHeroName == null &&
+            latestFrameEvidence.candidates.isNotEmpty()
         val winner = acceptedGroups.values.maxWithOrNull(
             compareBy<List<Pair<String, Double>>> { it.size }
                 .thenBy { group -> group.map(Pair<String, Double>::second).average() }
@@ -125,14 +130,11 @@ class SlotRecognitionTracker(
         }
 
         val conflictingAcceptedHeroes = acceptedGroups.size > 1
-        val latest = evidence.lastOrNull()
-        val explicitlyAmbiguous = latest != null &&
-            latest.acceptedHeroName == null &&
-            latest.candidates.isNotEmpty()
         val status = when {
-            conflictingAcceptedHeroes || explicitlyAmbiguous -> SlotRecognitionStatus.UNCERTAIN
-            accepted.isNotEmpty() -> SlotRecognitionStatus.SCANNING
             samples < requiredHits -> SlotRecognitionStatus.SCANNING
+            conflictingAcceptedHeroes || explicitlyAmbiguous -> SlotRecognitionStatus.UNCERTAIN
+            latestFrameEvidence == null -> SlotRecognitionStatus.NOT_DETECTED
+            accepted.isNotEmpty() -> SlotRecognitionStatus.SCANNING
             else -> SlotRecognitionStatus.NOT_DETECTED
         }
         return SlotRecognitionState(

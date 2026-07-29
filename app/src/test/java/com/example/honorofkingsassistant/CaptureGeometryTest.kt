@@ -11,7 +11,13 @@ class CaptureGeometryTest {
     }
 
     @Test
-    fun keepsRecordedCalibrationUnchanged() {
+    fun swapsCaptureOrientationWhenHuaweiRotatesFromPortraitToLandscape() {
+        assertEquals(CaptureSize(540, 1170), CaptureGeometry.fit(1080, 2340))
+        assertEquals(CaptureSize(1170, 540), CaptureGeometry.fit(2340, 1080))
+    }
+
+    @Test
+    fun doesNotUpscaleInputsSmallerThanTheHuaweiCaptureProfile() {
         assertEquals(CaptureSize(848, 392), CaptureGeometry.fit(848, 392))
     }
 

@@ -1,2 +1,7 @@
-HoK_Draft_Assistant_1.0.0_personal_jkm-lx3-rc1.apk
-SHA-256: 0EEA870B93DEAB0AD41701BD75EA9FA4EDFEB68940B349DA0F4FA1F5B10463E7
+Local debug candidate
+Filename: app-debug.apk
+Version: 1.0.0-personal-jkm-lx3-rc3
+Size: 49495226 bytes
+SHA-256: 1529133B67CF34BD539D4443C6F696F1291D461FC31D94B28D982CDC027D8FF0
+
+The delivery APK copied from GitHub Actions must be verified again after CI.

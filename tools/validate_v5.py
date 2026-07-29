@@ -58,8 +58,8 @@ for expected in (
     "buildToolsVersion '35.0.0'",
     "minSdk 23",
     "targetSdk 36",
-    "versionCode 12",
-    'versionName "1.0.0-personal-jkm-lx3-rc1"',
+    "versionCode 14",
+    'versionName "1.0.0-personal-jkm-lx3-rc3"',
 ):
     require(expected in app_gradle, f"Configuracion V5 ausente: {expected}")
 
@@ -147,8 +147,8 @@ for expected in (
     "python3 tools/test_v5_delivery_contract.py",
     "./gradlew --no-daemon clean testDebugUnitTest lintDebug assembleDebug",
     "HoK-Draft-Assistant-1.0-Personal-JKM-LX3",
-    "versionCode='12'",
-    "versionName='1.0.0-personal-jkm-lx3-rc1'",
+    "versionCode='14'",
+    "versionName='1.0.0-personal-jkm-lx3-rc3'",
 ):
     require(expected in workflow, f"CI V5 incompleto: {expected}")
 

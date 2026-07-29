@@ -9,22 +9,25 @@ WORKFLOW = (ROOT / ".github/workflows/android-ci.yml").read_text(encoding="utf-8
 MANIFEST = json.loads((ROOT / "app/src/main/assets/data_manifest.json").read_text(encoding="utf-8"))
 
 for marker in (
-    "versionCode 12",
-    'versionName "1.0.0-personal-jkm-lx3-rc1"',
+    "versionCode 14",
+    'versionName "1.0.0-personal-jkm-lx3-rc3"',
 ):
     assert marker in BUILD, marker
 
 for marker in (
     "HoK-Draft-Assistant-1.0-Personal-JKM-LX3",
+    "python3 -m pip install --requirement tools/requirements-host-tests.txt",
     "python3 tools/test_spanish_alias_catalog.py",
     "python3 tools/test_overlay_v55_contract.py",
     "python3 tools/test_scoreboard_scan_contract.py",
     "python3 tools/test_item_catalog.py",
     "python3 tools/test_min_sdk_compat.py",
+    "python3 tools/test_capture_rotation_contract.py",
     "python3 tools/test_v1_delivery_contract.py",
+    "python3 -m unittest discover -s tools/tests -v",
     "assets/hok_items.json",
-    "versionCode='12'",
-    "versionName='1.0.0-personal-jkm-lx3-rc1'",
+    "versionCode='14'",
+    "versionName='1.0.0-personal-jkm-lx3-rc3'",
 ):
     assert marker in WORKFLOW, marker
 

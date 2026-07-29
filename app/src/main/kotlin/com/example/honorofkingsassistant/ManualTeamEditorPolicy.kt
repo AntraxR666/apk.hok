@@ -28,7 +28,13 @@ data class ManualTeamAssignments(
         val slot = ManualTeamSlot(side, slotIndex)
         val trimmed = heroName.trim()
         require(trimmed.isNotEmpty())
-        return copy(values = values + (slot to trimmed))
+        val normalized = CounterCatalog.normalize(trimmed)
+        val withoutDuplicate = values.filterNot { (existingSlot, existingHero) ->
+            existingSlot.side == side &&
+                existingSlot != slot &&
+                CounterCatalog.normalize(existingHero) == normalized
+        }
+        return copy(values = withoutDuplicate + (slot to trimmed))
     }
 
     fun remove(side: TeamSide, slotIndex: Int): ManualTeamAssignments =

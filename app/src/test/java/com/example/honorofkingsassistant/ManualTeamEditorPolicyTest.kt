@@ -55,4 +55,16 @@ class ManualTeamEditorPolicyTest {
         assertEquals(null, state.heroAt(TeamSide.ALLY, 1))
         assertEquals("Bai Qi", state.heroAt(TeamSide.ALLY, 2))
     }
+
+    @Test
+    fun assigningSameHeroToAnotherSlotMovesItWithinThatTeam() {
+        val state = ManualTeamAssignments()
+            .assign(TeamSide.ALLY, 1, "Angela")
+            .assign(TeamSide.ENEMY, 1, "Angela")
+            .assign(TeamSide.ALLY, 3, "Ángela")
+
+        assertEquals(null, state.heroAt(TeamSide.ALLY, 1))
+        assertEquals("Ángela", state.heroAt(TeamSide.ALLY, 3))
+        assertEquals("Angela", state.heroAt(TeamSide.ENEMY, 1))
+    }
 }

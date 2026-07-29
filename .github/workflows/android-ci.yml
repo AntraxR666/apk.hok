@@ -16,16 +16,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -39,6 +39,9 @@ jobs:
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
+
+      - name: Install host recognition test dependencies
+        run: python3 -m pip install --requirement tools/requirements-host-tests.txt
 
       - name: Validate project contracts
         run: |
@@ -66,8 +69,10 @@ jobs:
           python3 tools/test_scoreboard_scan_contract.py
           python3 tools/test_item_catalog.py
           python3 tools/test_min_sdk_compat.py
+          python3 tools/test_capture_rotation_contract.py
           python3 tools/test_v1_delivery_contract.py
           python3 tools/validate_v5.py
+          python3 -m unittest discover -s tools/tests -v
 
       - name: Unit tests, lint and APK
         run: ./gradlew --no-daemon clean testDebugUnitTest lintDebug assembleDebug
@@ -92,13 +97,13 @@ jobs:
             echo "Unexpected ACCESS_NETWORK_STATE permission in final APK" >&2
             exit 1
           fi
-          grep -q "versionCode='12'" app-debug.badging.txt
-          grep -q "versionName='1.0.0-personal-jkm-lx3-rc1'" app-debug.badging.txt
+          grep -q "versionCode='14'" app-debug.badging.txt
+          grep -q "versionName='1.0.0-personal-jkm-lx3-rc3'" app-debug.badging.txt
           sha256sum "$APK" | tee app-debug.apk.sha256
 
       - name: Upload APK and reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: HoK-Draft-Assistant-1.0-Personal-JKM-LX3
           if-no-files-found: warn

@@ -1,8 +1,23 @@
 # HoK Draft Assistant 1.0 — guía de uso en Huawei JKM-LX3
 
-Esta guía corresponde a la APK `1.0.0-personal-jkm-lx3-rc2`. La burbuja puede moverse
+Esta guía corresponde a la APK `1.0.0-personal-jkm-lx3-rc3`. La burbuja puede moverse
 arrastrando solamente la franja azul `HOK · ...`; los botones dentro del panel no arrastran
 la burbuja y deben responder a toques normales.
+
+## Ruta rápida: lo único que necesitas recordar
+
+1. Abre el asistente y acepta **superposición** y **captura de pantalla**.
+2. En la selección de HoK, abre la burbuja, pulsa **Selección** y después
+   **Escanear selección ahora**.
+3. Si un slot queda dudoso, la app abre directamente ese puesto. Elige una sugerencia o
+   escribe el nombre/título; no recorras otros menús.
+4. En la pantalla grande entre selección y mapa, pulsa
+   **Confirmar equipos antes de partida**.
+5. Ya en el mapa, pulsa **Partida**. Si necesitas corregir, abre el marcador de los diez
+   jugadores y pulsa **Verificar equipos y actualizar compra**.
+
+Las tres acciones principales están arriba del panel. **Mostrar ajustes avanzados** es opcional:
+no hace falta abrirlo para el uso normal.
 
 ## Antes de abrir Honor of Kings
 
@@ -17,6 +32,9 @@ la burbuja y deben responder a toques normales.
    no quedó concedido; vuelve a abrir la app y repite los pasos 2–4.
 6. En EMUI 9.1, desactiva la gestión automática de batería de la app y habilita inicio automático,
    inicio secundario y ejecución en segundo plano.
+7. Puedes iniciar el asistente con el teléfono vertical. Abre HoK, espera a que quede horizontal
+   y pulsa **Selección**: la app recalcula automáticamente la captura para la orientación y el
+   tamaño reales antes de escanear.
 
 ## Qué significa cada etapa
 
@@ -32,27 +50,34 @@ El botón **Verificar equipos y actualizar compra** queda tenue e inactivo fuera
 ## Primera partida clasificatoria: forma fiable de empezar
 
 En clasificatoria la selección puede mostrar retratos y nombres de jugadores, sin el nombre del
-héroe. Esta versión ya incluye **111 plantillas iniciales** de los retratos base de selección,
+héroe. Esta versión ya incluye **113 plantillas iniciales** de los retratos base de selección,
 por lo que **Auto** debe intentar reconocerlos desde la primera instalación. No usa tarjetas de
 skins como si fueran retratos de selección. La corrección manual queda como respaldo seguro para
-un resultado ausente, ambiguo o para uno de los cinco héroes que todavía no tiene plantilla base
+un resultado ausente, ambiguo o para uno de los tres héroes temporales que todavía no tiene plantilla base
 verificada.
 
 1. Abre la burbuja con **Abrir**.
-2. Pulsa **Clasificatoria** y después **Selección**.
-3. Espera unos segundos y revisa las sugerencias. Si un héroe no aparece o una sugerencia parece
-   dudosa, en **Corrección y verificación** pulsa **Manual** o **Editar héroes manualmente**.
-4. Verás `Aliado 1` a `Aliado 5` y `Enemigo 1` a `Enemigo 5`. Pulsa el slot que corresponde al
-   retrato visible, filtra por rol si ayuda y elige el héroe. Cada ficha muestra `Nombre · título
-   español`; por ejemplo, `Angela · La Maga de Fuego` es una sola heroína.
-5. Repite solo para los héroes ya bloqueados y visibles. Si un slot aún está vacío o solo es una
+2. En la primera fila visible, pulsa **Selección**. No necesitas entrar en ajustes avanzados.
+3. Cuando ya haya retratos en los laterales, pulsa **Escanear selección ahora**. La app reúne
+   cinco lecturas sin que tengas que tocar más opciones.
+4. Bajo **Héroes por posición** verás `A1`–`A5` y `E1`–`E5`: verde significa detectado,
+   azul significa que aún está reuniendo lecturas, naranja significa dudoso y rojo significa
+   no detectado.
+5. Si un puesto queda naranja o rojo, se abre directamente la corrección de ese único puesto.
+   Toca una de las sugerencias o **Buscar otro héroe por nombre o título**. No necesitas recorrer
+   el editor completo. Después de corregirlo, la app avanza automáticamente al siguiente puesto
+   pendiente; al resolver el último vuelve al resumen.
+6. Si prefieres revisar los diez puestos, pulsa **Editar héroes manualmente**. Cada ficha muestra
+   `Nombre · título español`; por ejemplo, `Angela · La Maga de Fuego` es una sola heroína.
+7. Repite solo para los héroes ya bloqueados y visibles. Si un slot aún está vacío o solo es una
    preselección, déjalo sin asignar: no conviene enseñar una imagen equivocada.
-6. Al elegir un héroe mientras esa selección está visible, el estado debe indicar
+8. Al elegir un héroe mientras esa selección está visible, el estado debe indicar
    **“se aprendió este retrato de selección localmente”**. No es un requisito para empezar a usar
    Auto: añade una corrección local adicional sin sustituir la plantilla inicial. No se sube a
    Internet.
-7. Para tu propia posición, fija `Mi slot` en 1–5 si el detector no identifica de forma estable
-   a R-95. Marca `Pendiente` antes de bloquear tu héroe y `Fijado` después de bloquearlo.
+9. Solo si lo necesitas, abre **Mostrar ajustes avanzados** para fijar `Mi slot` en 1–5, cambiar
+   lados o forzar Clasificatoria/Normal. Marca `Pendiente` antes de bloquear tu héroe y `Fijado`
+   después de bloquearlo si la detección automática de R-95 falla.
 
 En partidas posteriores puedes dejar **Auto** activo. Si una actualización cambia el retrato base
 o si una lectura no es suficientemente segura, la app debe dejar el slot sin afirmar en lugar de

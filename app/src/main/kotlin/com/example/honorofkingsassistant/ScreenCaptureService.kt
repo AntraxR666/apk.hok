@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
@@ -118,6 +119,11 @@ class ScreenCaptureService : Service() {
         matchMode = visionEngine.matchModeState()
         lastRecognition = visionEngine.recognitionCalibration()
         createNotificationChannel()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        refreshCaptureGeometryFromWindow()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -284,10 +290,14 @@ class ScreenCaptureService : Service() {
                 val slotIndex = intent.getIntExtra(EXTRA_MANUAL_SLOT_INDEX, 0)
                 val teachLoading = intent.getBooleanExtra(EXTRA_TEACH_LOADING_TEMPLATE, false)
                 if (slotIndex in 1..5 && counterEngine.findHero(heroName) != null) {
+                    val activeQuickCorrection = quickCorrectionRequest
                     val learned = assignManualSlot(side, slotIndex, heroName, teachLoading)
-                    if (quickCorrectionRequest?.slot == ManualTeamSlot(side, slotIndex)) {
-                        quickCorrectionRequest = null
-                    }
+                    quickCorrectionRequest = QuickCorrectionPolicy.afterManualAssignment(
+                        activeRequest = activeQuickCorrection,
+                        assignedSlot = ManualTeamSlot(side, slotIndex),
+                        states = lastSlotRecognition,
+                        manualAssignments = manualAssignments
+                    )
                     publishCurrent(
                         if (learned) {
                             if (teachLoading) {
@@ -310,6 +320,7 @@ class ScreenCaptureService : Service() {
                 if (slotIndex in 1..5) {
                     manualAssignments = manualAssignments.remove(side, slotIndex)
                     syncLegacyManualSets()
+                    refreshRankedSelectionSnapshot()
                     quickCorrectionRequest = null
                     publishCurrent("Héroe manual quitado del slot")
                 }
@@ -319,6 +330,7 @@ class ScreenCaptureService : Service() {
                 manualAssignments = manualAssignments.clear()
                 manualAllies.clear()
                 manualEnemies.clear()
+                refreshRankedSelectionSnapshot()
                 quickCorrectionRequest = null
                 publishCurrent("Correcciones manuales eliminadas")
                 return START_NOT_STICKY
@@ -399,6 +411,7 @@ class ScreenCaptureService : Service() {
         selectedStage = stage
         suggestedStage = null
         AssistantPreferences.setAssistantStage(this, stage)
+        refreshCaptureGeometryFromWindow()
         updateCaptureSurfaceForStage()
         when (stage) {
             AssistantStage.PAUSED -> publishCurrent(
@@ -502,6 +515,12 @@ class ScreenCaptureService : Service() {
         }
         val metrics = resources.displayMetrics
         return metrics.widthPixels.coerceAtLeast(1) to metrics.heightPixels.coerceAtLeast(1)
+    }
+
+    private fun refreshCaptureGeometryFromWindow() {
+        if (virtualDisplay == null) return
+        val (sourceWidth, sourceHeight) = initialCaptureSourceSize()
+        resizeCaptureSurface(sourceWidth, sourceHeight)
     }
 
     @android.annotation.SuppressLint("WrongConstant")
@@ -613,6 +632,10 @@ class ScreenCaptureService : Service() {
                                     result.slotRecognitionEvidence,
                                     lastBoard
                                 )
+                                lastVisionSnapshot = ConfirmedSlotSnapshotPolicy.from(
+                                    lastSlotRecognition,
+                                    manualAssignments
+                                )
                                 updateExplicitScanCorrection()
                             }
                             MatchMode.NORMAL_BLIND -> {
@@ -624,10 +647,10 @@ class ScreenCaptureService : Service() {
                                 lastSlotFingerprints = emptyList()
                                 slotRecognitionTracker.reset()
                                 lastSlotRecognition = slotRecognitionTracker.current()
+                                lastVisionSnapshot = tracker.observe(result.observations)
                             }
                             MatchMode.AUTO -> Unit
                         }
-                        lastVisionSnapshot = tracker.observe(result.observations)
                     } else {
                         lastBoard = DraftBoardState.empty(ScreenMode.DRAFT)
                         lastPlayerSlot = playerSlotResolver.resolve(null, manualPlayerSlotIndex)
@@ -769,7 +792,17 @@ class ScreenCaptureService : Service() {
 
     private fun buildDraftStatus(result: DraftVisionResult): String {
         val board = result.board
-        val identityCount = result.observations.size
+        val identityCount = if (result.matchMode.effective == MatchMode.RANKED_DRAFT) {
+            QuickCorrectionPolicy.applyManualAuthority(
+                lastSlotRecognition,
+                manualAssignments
+            ).count {
+                it.status == SlotRecognitionStatus.DETECTED ||
+                    it.status == SlotRecognitionStatus.MANUAL
+            }
+        } else {
+            result.observations.size
+        }
         if (result.matchMode.effective == MatchMode.NORMAL_BLIND) {
             return "Selección normal · $identityCount aliados reconocidos · sin observaciones enemigas"
         }
@@ -822,7 +855,17 @@ class ScreenCaptureService : Service() {
     }
 
     private fun publishCurrent(status: String) {
-        val merged = mergeManual(lastVisionSnapshot)
+        val merged = if (
+            lastSubphase == DraftSubphase.LOADING &&
+            lastLoadingRosterReconciliation != null
+        ) {
+            LoadingRosterSnapshotPolicy.from(
+                requireNotNull(lastLoadingRosterReconciliation),
+                manualAssignments
+            )
+        } else {
+            mergeManual(lastVisionSnapshot)
+        }
         val requestedRole = AssistantPreferences.getRequestedRole(this)
         val automaticFlow = DraftFlowResolver.resolve(
             lastBoard,
@@ -839,10 +882,13 @@ class ScreenCaptureService : Service() {
             selectedStage == AssistantStage.DRAFT && flow.shouldRecommendPicks
         ) allCandidates else emptyList()
         val playerSlot = manualPlayerSlotIndex ?: lastPlayerSlot?.takeIf { it.side == TeamSide.ALLY }?.slotIndex
-        val playerHero = playerSlot?.let { slot ->
-            manualAssignments.heroAt(TeamSide.ALLY, slot)
-                ?: merged.allies.getOrNull(slot - 1)?.heroName
-        }?.let(counterEngine::findHero)
+        val playerHero = PlayerHeroIdentityPolicy.resolve(
+            allySlotIndex = playerSlot,
+            manualAssignments = manualAssignments,
+            slotRecognition = lastSlotRecognition,
+            loadingRoster = lastLoadingRosterReconciliation,
+            snapshot = merged
+        )?.let(counterEngine::findHero)
         val enemyThreats = merged.enemies.mapNotNull { enemy ->
             counterEngine.findHero(enemy.heroName)?.role?.let { role ->
                 when {
@@ -958,10 +1004,8 @@ class ScreenCaptureService : Service() {
         teachLoading: Boolean
     ): Boolean {
         manualAssignments = manualAssignments.assign(side, slotIndex, heroName)
-        if (quickCorrectionRequest?.slot == ManualTeamSlot(side, slotIndex)) {
-            quickCorrectionRequest = null
-        }
         syncLegacyManualSets()
+        refreshRankedSelectionSnapshot()
         val templateDomain = when {
             teachLoading && loadingConfirmationReview &&
                 lastSubphase == DraftSubphase.LOADING ->
@@ -982,6 +1026,19 @@ class ScreenCaptureService : Service() {
             lastRecognition = visionEngine.recognitionCalibration()
         }
         return learned
+    }
+
+    private fun refreshRankedSelectionSnapshot() {
+        if (
+            selectedStage == AssistantStage.DRAFT &&
+            matchMode.effective == MatchMode.RANKED_DRAFT &&
+            lastSubphase != DraftSubphase.LOADING
+        ) {
+            lastVisionSnapshot = ConfirmedSlotSnapshotPolicy.from(
+                lastSlotRecognition,
+                manualAssignments
+            )
+        }
     }
 
     private fun syncLegacyManualSets() {

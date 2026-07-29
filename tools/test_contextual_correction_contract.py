@@ -14,6 +14,10 @@ strings = (ROOT / "app/src/main/res/values/strings.xml").read_text(encoding="utf
 
 
 required_overlay_tokens = (
+    "stageButton(AssistantStage.DRAFT",
+    "stageButton(AssistantStage.IN_GAME",
+    "stageButton(AssistantStage.PAUSED",
+    "stageButtons.forEach",
     "renderSlotRecognition(state)",
     "showQuickCorrection(request)",
     "QuickCorrectionPolicy.hasActionableProblem",
@@ -32,6 +36,15 @@ required_service_tokens = (
 )
 for token in required_service_tokens:
     assert token in service, f"missing scan/correction orchestration: {token}"
+
+manual_assign = service[
+    service.index("ACTION_MANUAL_ASSIGN_SLOT -> {"):
+    service.index("ACTION_MANUAL_REMOVE_SLOT -> {")
+]
+assert "QuickCorrectionPolicy.afterManualAssignment(" in manual_assign
+assert manual_assign.index("assignManualSlot(") < manual_assign.index(
+    "QuickCorrectionPolicy.afterManualAssignment("
+) < manual_assign.index("publishCurrent(")
 
 for resource in (
     'name="scan_draft_now"',

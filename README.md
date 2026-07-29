@@ -9,7 +9,10 @@ Esta candidata está calibrada para el **Huawei JKM-LX3**, Android 9, EMUI 9.1, 
 - `ImageReader` conserva dos buffers porque `acquireLatestImage()` necesita al menos dos para descartar fotogramas antiguos correctamente.
 - La cadencia comienza en 700 ms y aumenta automáticamente hasta 1600 ms cuando la latencia del Kirin 710 sube.
 - Los fotogramas que llegan mientras ML Kit está ocupado se descartan; nunca se acumula una cola retrasada.
-- La identidad exige 3 coincidencias en 5 fotogramas con confianza mínima de 0,55 y rechazo de retratos ambiguos.
+- En clasificatoria, cada puesto exige 3 coincidencias en 5 fotogramas y supera
+  umbrales calibrados de distancia y margen visual antes de confirmar un retrato.
+  El piso de confianza `0,55` se conserva para el camino temporal basado en
+  OCR/nombres. Ambos caminos rechazan resultados ambiguos.
 
 ## Funcionamiento
 
@@ -17,6 +20,8 @@ Esta candidata está calibrada para el **Huawei JKM-LX3**, Android 9, EMUI 9.1, 
 - **Selección:** analiza veto, picks y ajustes, y actualiza recomendaciones.
 - **Partida:** conserva composición y estrategia sin continuar el OCR.
 - La etapa manual siempre manda; la detección automática solo sugiere.
+- Al pasar de vertical a horizontal, el servicio vuelve a calcular la superficie
+  de captura para el marco real del JKM-LX3 antes del siguiente escaneo.
 - La burbuja semitransparente permite corregir slot, estado del pick y composición sin arrastrarse al hacer scroll.
 - **Confirmar equipos antes de partida** toma un único fotograma de la pantalla de carga de dos equipos y abre una revisión manual segura.
 - **Verificar equipos e ítems** toma un único fotograma del marcador dentro de partida, reconcilia títulos de héroe y abre los diez slots para revisión.
@@ -34,6 +39,6 @@ Para desarrollo local usa Android Studio o ejecuta `tools/v55_emulator_smoke.ps1
 
 Una compilación correcta no demuestra por sí sola precisión perfecta. La puerta final está en `docs/V5_PERSONAL_REAL_DEVICE_ACCEPTANCE.md`, completada en el Huawei JKM-LX3 real durante selección clasificatoria, selección normal, pantalla de carga y marcador dentro de partida.
 
-## Estado 1.0 RC1
+## Estado 1.0 RC3
 
-La versión es `1.0.0-personal-jkm-lx3-rc1` (`versionCode 12`). Es una candidata personal offline: no solicita `INTERNET` ni `ACCESS_NETWORK_STATE`. La rama de trabajo queda separada de la futura versión comercial, que deberá validar nuevas resoluciones, idiomas, rendimiento y derechos de activos antes de distribuirse.
+La versión es `1.0.0-personal-jkm-lx3-rc3` (`versionCode 14`). Es una candidata personal offline: no solicita `INTERNET` ni `ACCESS_NETWORK_STATE`. La rama de trabajo queda separada de la futura versión comercial, que deberá validar nuevas resoluciones, idiomas, rendimiento y derechos de activos antes de distribuirse.

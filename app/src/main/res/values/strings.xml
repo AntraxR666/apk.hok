@@ -35,6 +35,7 @@
     <string name="collapse_overlay">Cerrar panel</string>
     <string name="rescan">Escanear</string>
     <string name="scan_draft_now">Escanear selección ahora</string>
+    <string name="primary_stage_title">1. Indica dónde estás</string>
     <string name="slot_recognition_title">Héroes por posición</string>
     <string name="slot_recognition_waiting">Pulsa Escanear cuando los retratos aparezcan.</string>
     <string name="quick_correction_no_candidate">No hubo una coincidencia segura. Busca el héroe correcto; la corrección quedará guardada para esta partida.</string>
