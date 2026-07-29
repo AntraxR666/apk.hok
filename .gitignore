@@ -15,3 +15,6 @@ build-output.txt
 build-output-v4.txt
 *.jks
 *.keystore
+__pycache__/
+*.pyc
+tmp/

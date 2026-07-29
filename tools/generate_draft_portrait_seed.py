@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate deterministic V2 draft-portrait fingerprints from verified hero icons.
+"""Generate deterministic V3 draft-portrait fingerprints from verified hero icons.
 
 The Android application stores compact, non-reversible signatures rather than the
 source artwork.  This generator mirrors PortraitFingerprint.fromArgb144() so the
@@ -12,6 +12,7 @@ import argparse
 import json
 import math
 import unicodedata
+from dataclasses import dataclass
 from pathlib import Path
 
 import cv2
@@ -20,17 +21,44 @@ import numpy as np
 
 EDGE_BINS = 8
 SOURCE_URL = "https://honor-of-kings.fandom.com/wiki/Heroes"
+SOURCE_ICON_OVERRIDES = {
+    # Current localized names reuse the same base-selection art published under
+    # the previous global names.
+    "Ao'yin": (
+        "https://static.wikia.nocookie.net/honor-of-kings/images/f/f8/"
+        "Loong_Icon.png/revision/latest?cb=20241028035241"
+    ),
+    "Gao Changgong": (
+        "https://static.wikia.nocookie.net/honor-of-kings/images/c/cf/"
+        "Prince_of_Lanling_Icon.png/revision/latest?cb=20240528113642"
+    ),
+}
 
-# Variants model the small framing and display differences observed between the
-# public icon and the in-game draft slot.  The canonical image remains first.
+@dataclass(frozen=True)
+class PortraitVariant:
+    scale: float
+    offset_x: float
+    offset_y: float
+    contrast: float = 1.0
+    brightness: int = 0
+
+
+# Compact set derived from the real JKM-LX3 ranked recording. It models the game's
+# asymmetric crop before tone changes. Keeping the set bounded avoids both runtime
+# bloat and the false positives caused by an exhaustive transform search.
 VARIANTS = (
-    (0.000, 1.00, 0),
-    (0.035, 1.00, 0),
-    (0.070, 1.00, 0),
-    (0.000, 0.90, -6),
-    (0.000, 1.10, 6),
-    (0.035, 0.92, 8),
-    (0.035, 1.08, -8),
+    PortraitVariant(1.00, 0.00, 0.00),
+    PortraitVariant(1.00, 0.10, -0.10),
+    PortraitVariant(1.00, 0.05, -0.10),
+    PortraitVariant(0.92, 0.05, -0.05),
+    PortraitVariant(0.84, 0.05, -0.05),
+    PortraitVariant(0.92, 0.00, -0.05),
+    PortraitVariant(0.92, 0.00, 0.00),
+    PortraitVariant(0.84, 0.00, -0.05),
+    PortraitVariant(1.00, -0.05, -0.05),
+    PortraitVariant(0.84, 0.00, 0.00),
+    PortraitVariant(1.00, 0.00, 0.00, contrast=0.90, brightness=-6),
+    PortraitVariant(1.00, 0.00, 0.00, contrast=1.10, brightness=6),
 )
 
 
@@ -50,17 +78,25 @@ def sample_coordinate(index: int, sample_count: int) -> int:
 
 def transformed_sample(
     source_bgr: np.ndarray,
-    crop_ratio: float,
-    contrast: float,
-    brightness: int,
+    variant: PortraitVariant,
 ) -> np.ndarray:
     height, width = source_bgr.shape[:2]
-    inset_x = int(round(width * crop_ratio))
-    inset_y = int(round(height * crop_ratio))
-    right = max(inset_x + 1, width - inset_x)
-    bottom = max(inset_y + 1, height - inset_y)
-    cropped = source_bgr[inset_y:bottom, inset_x:right]
-    adjusted = np.clip(cropped.astype(np.float32) * contrast + brightness, 0, 255)
+    crop_width = width * variant.scale
+    crop_height = height * variant.scale
+    center_x = width * (0.5 + variant.offset_x)
+    center_y = height * (0.5 + variant.offset_y)
+    left = max(0, int(round(center_x - crop_width / 2.0)))
+    top = max(0, int(round(center_y - crop_height / 2.0)))
+    right = min(width, int(round(center_x + crop_width / 2.0)))
+    bottom = min(height, int(round(center_y + crop_height / 2.0)))
+    if right <= left or bottom <= top:
+        raise ValueError(f"invalid portrait variant: {variant}")
+    cropped = source_bgr[top:bottom, left:right]
+    adjusted = np.clip(
+        cropped.astype(np.float32) * variant.contrast + variant.brightness,
+        0,
+        255,
+    )
     resized = cv2.resize(adjusted.astype(np.uint8), (12, 12), interpolation=cv2.INTER_LINEAR)
     return cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
 
@@ -73,7 +109,7 @@ def bit_hash(values: list[int], threshold: float) -> int:
     return result
 
 
-def fingerprint_v2(rgb: np.ndarray) -> str:
+def fingerprint_v3(rgb: np.ndarray) -> str:
     if rgb.shape != (12, 12, 3):
         raise ValueError(f"expected a 12x12 RGB sample, got {rgb.shape}")
 
@@ -139,9 +175,10 @@ def fingerprint_v2(rgb: np.ndarray) -> str:
 
     edges = ",".join(str(value) for value in edge_signature)
     colors = ",".join(str(value) for value in color_signature)
+    spatial = ",".join(str(value) for value in sampled)
     return (
-        f"v2:{average_hash:016x}:{gradient_hash:016x}:"
-        f"{edges}:{colors}"
+        f"v3:{average_hash:016x}:{gradient_hash:016x}:"
+        f"{edges}:{colors}:{spatial}"
     )
 
 
@@ -172,34 +209,41 @@ def build_asset(icon_dir: Path, lookup_path: Path) -> dict[str, object]:
     templates: dict[str, list[str]] = {}
     for icon_path in sorted(icon_dir.glob("*.png"), key=lambda item: item.name.casefold()):
         hero_key = normalized_hero_name(icon_path.stem)
-        if icon_path.stem not in found:
+        if icon_path.stem not in found and icon_path.stem not in SOURCE_ICON_OVERRIDES:
             raise ValueError(f"{icon_path.name} is not present in the verified lookup")
         source = load_source(icon_path)
         variants = [
-            fingerprint_v2(
-                transformed_sample(source, crop_ratio, contrast, brightness)
-            )
-            for crop_ratio, contrast, brightness in VARIANTS
+            fingerprint_v3(transformed_sample(source, variant))
+            for variant in VARIANTS
         ]
         # Deduplicate while preserving deterministic canonical-first order.
         templates[hero_key] = list(dict.fromkeys(variants))
 
-    if len(templates) != len(found):
+    expected_template_count = len(found) + len(SOURCE_ICON_OVERRIDES)
+    if len(templates) != expected_template_count:
         raise ValueError(
-            f"icon/lookup mismatch: {len(templates)} icons for {len(found)} URLs"
+            "icon/lookup mismatch: "
+            f"{len(templates)} icons for {expected_template_count} verified URLs"
         )
 
+    unresolved = sorted(
+        name
+        for name in missing
+        if normalized_hero_name(name) not in templates
+    )
+
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "domain": "DRAFT_PORTRAIT",
         "source": (
             "Verified Honor of Kings hero icons transformed into non-reversible "
-            "V2 fingerprints for the JKM-LX3 draft portrait interior"
+            "V3 fingerprints for the JKM-LX3 draft portrait interior"
         ),
         "source_url": SOURCE_URL,
+        "source_icon_overrides": SOURCE_ICON_OVERRIDES,
         "generator": "tools/generate_draft_portrait_seed.py",
         "variant_count": len(VARIANTS),
-        "missing_public_icons": sorted(missing),
+        "missing_public_icons": unresolved,
         "templates": dict(sorted(templates.items())),
     }
 
@@ -217,7 +261,7 @@ def main() -> None:
         encoding="utf-8",
     )
     print(
-        "DRAFT_PORTRAIT_SEED_V2_OK "
+        "DRAFT_PORTRAIT_SEED_V3_OK "
         f"heroes={len(asset['templates'])} variants={asset['variant_count']}"
     )
 

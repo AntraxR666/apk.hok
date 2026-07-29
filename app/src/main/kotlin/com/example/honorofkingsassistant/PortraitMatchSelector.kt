@@ -7,10 +7,12 @@ data class PortraitMatchCandidate(
 )
 
 object PortraitMatchSelector {
-    const val MATCH_THRESHOLD = 0.23
-    const val MIN_MATCH_CONFIDENCE = 0.45
-    const val MIN_AMBIGUITY_MARGIN = 0.025
+    const val MATCH_THRESHOLD = 0.21
+    const val MIN_MATCH_CONFIDENCE = 0.24
+    const val MIN_AMBIGUITY_MARGIN = 0.035
     private const val SUGGESTION_DISTANCE = 0.50
+    private const val CONFIDENCE_DISTANCE = 0.35
+    private const val STRONG_MARGIN = 0.12
 
     /**
      * Returns the best distinct heroes even when strict automatic acceptance rejects them.
@@ -53,8 +55,15 @@ object PortraitMatchSelector {
         val second = ranked.getOrNull(1)
         if (second != null && second.distance - best.distance < minimumMargin) return null
 
+        val distanceEvidence =
+            (1.0 - best.distance / CONFIDENCE_DISTANCE).coerceIn(0.0, 1.0)
+        val marginEvidence = if (second == null) {
+            1.0
+        } else {
+            ((second.distance - best.distance) / STRONG_MARGIN).coerceIn(0.0, 1.0)
+        }
         val confidence = (
-            ((matchThreshold - best.distance) / matchThreshold).coerceIn(0.0, 1.0) *
+            (distanceEvidence * 0.70 + marginEvidence * 0.30) *
                 best.visualConfidence.coerceIn(0.0, 1.0)
         ).coerceIn(0.0, 1.0)
         if (confidence < minimumConfidence) return null

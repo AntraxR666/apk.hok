@@ -1,0 +1,21 @@
+{
+  "source": "SELECCION HEROES COMPETITIVA.mp4 supplied by the JKM-LX3 owner",
+  "geometry_authority": "Huawei JKM-LX3 2340x1080 landscape",
+  "sample_window_seconds": {
+    "start": 45,
+    "end": 158,
+    "step": 1
+  },
+  "slots": {
+    "ALLY:1": "Yao",
+    "ALLY:2": "Xiao Qiao",
+    "ALLY:3": "Zhang Fei",
+    "ALLY:4": "Kaizer",
+    "ALLY:5": "Luban No.7",
+    "ENEMY:1": "Arthur",
+    "ENEMY:2": "Kongming",
+    "ENEMY:3": "Diaochan",
+    "ENEMY:4": "Cai Yan",
+    "ENEMY:5": "Erin"
+  }
+}

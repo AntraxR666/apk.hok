@@ -34,19 +34,24 @@ class PortraitTemplateSeedCatalogTest {
     }
 
     @Test
-    fun productionSeedIsSelectionOnlyAndCoversTheVerifiedPublicSet() {
+    fun productionSeedIsSelectionOnlyAndCoversVerifiedCurrentAndHistoricalIcons() {
         val raw = File("src/main/assets/draft_portrait_seed_v1.json").readText()
         val seed = PortraitTemplateSeedCatalog.parse(raw)
         val root = JSONObject(raw)
         val angela = root.getJSONObject("templates").getJSONArray("angela")
+        val missing = root.getJSONArray("missing_public_icons")
 
-        assertEquals(2, root.getInt("schema_version"))
+        assertEquals(3, root.getInt("schema_version"))
         assertEquals(setOf(PortraitTemplateDomain.DRAFT_PORTRAIT), seed.keys)
-        assertEquals(111, seed.getValue(PortraitTemplateDomain.DRAFT_PORTRAIT).size)
+        assertEquals(113, seed.getValue(PortraitTemplateDomain.DRAFT_PORTRAIT).size)
         assertTrue(seed.getValue(PortraitTemplateDomain.DRAFT_PORTRAIT).containsKey("angela"))
+        assertEquals(
+            setOf("Annette", "Florentino", "Lorion"),
+            (0 until missing.length()).map(missing::getString).toSet()
+        )
         assertTrue(angela.length() >= 5)
         repeat(angela.length()) { index ->
-            assertTrue(angela.getString(index).startsWith("v2:"))
+            assertTrue(angela.getString(index).startsWith("v3:"))
         }
     }
 

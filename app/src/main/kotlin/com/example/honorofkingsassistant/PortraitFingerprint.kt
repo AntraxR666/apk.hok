@@ -14,12 +14,14 @@ data class PortraitFingerprint(
     val colorSignature: IntArray,
     val version: Int = 1,
     val gradientHash: Long = 0L,
-    val edgeSignature: IntArray = IntArray(EDGE_SIGNATURE_SIZE)
+    val edgeSignature: IntArray = IntArray(EDGE_SIGNATURE_SIZE),
+    val spatialLuminanceSignature: IntArray = IntArray(SPATIAL_LUMINANCE_SIZE)
 ) {
     init {
         require(colorSignature.size == COLOR_SIGNATURE_SIZE)
-        require(version in 1..2)
+        require(version in 1..3)
         require(edgeSignature.size == EDGE_SIGNATURE_SIZE)
+        require(spatialLuminanceSignature.size == SPATIAL_LUMINANCE_SIZE)
     }
 
     fun distance(other: PortraitFingerprint): Double {
@@ -31,22 +33,37 @@ data class PortraitFingerprint(
         val gradientDistance =
             java.lang.Long.bitCount(gradientHash xor other.gradientHash) / 64.0
         val edgeDistance = signatureDistance(edgeSignature, other.edgeSignature)
+        if (version == 2 || other.version == 2) {
+            return (
+                hashDistance * 0.35 +
+                    gradientDistance * 0.30 +
+                    edgeDistance * 0.20 +
+                    colorDistance * 0.15
+                ).coerceIn(0.0, 1.0)
+        }
+        val spatialDistance = spatialDistance(
+            spatialLuminanceSignature,
+            other.spatialLuminanceSignature
+        )
         return (
-            hashDistance * 0.35 +
-                gradientDistance * 0.30 +
-                edgeDistance * 0.20 +
-                colorDistance * 0.15
+            hashDistance * 0.18 +
+                gradientDistance * 0.12 +
+                edgeDistance * 0.10 +
+                colorDistance * 0.10 +
+                spatialDistance * 0.50
             ).coerceIn(0.0, 1.0)
     }
 
     fun encode(): String =
-        if (version == 1) {
+        when (version) {
+            1 -> {
             buildString {
                 append(java.lang.Long.toUnsignedString(averageHash, 16).padStart(16, '0'))
                 append(':')
                 append(colorSignature.joinToString(","))
             }
-        } else {
+            }
+            2 -> {
             buildString {
                 append("v2:")
                 append(java.lang.Long.toUnsignedString(averageHash, 16).padStart(16, '0'))
@@ -56,6 +73,21 @@ data class PortraitFingerprint(
                 append(edgeSignature.joinToString(","))
                 append(':')
                 append(colorSignature.joinToString(","))
+            }
+            }
+            else -> {
+                buildString {
+                    append("v3:")
+                    append(java.lang.Long.toUnsignedString(averageHash, 16).padStart(16, '0'))
+                    append(':')
+                    append(java.lang.Long.toUnsignedString(gradientHash, 16).padStart(16, '0'))
+                    append(':')
+                    append(edgeSignature.joinToString(","))
+                    append(':')
+                    append(colorSignature.joinToString(","))
+                    append(':')
+                    append(spatialLuminanceSignature.joinToString(","))
+                }
             }
         }
 
@@ -67,11 +99,56 @@ data class PortraitFingerprint(
         return total / first.size
     }
 
+    private fun spatialDistance(first: IntArray, second: IntArray): Double {
+        val firstMean = first.average()
+        val secondMean = second.average()
+        var numerator = 0.0
+        var firstMagnitude = 0.0
+        var secondMagnitude = 0.0
+        for (index in first.indices) {
+            val firstCentered = first[index] - firstMean
+            val secondCentered = second[index] - secondMean
+            numerator += firstCentered * secondCentered
+            firstMagnitude += firstCentered * firstCentered
+            secondMagnitude += secondCentered * secondCentered
+        }
+        if (firstMagnitude == 0.0 || secondMagnitude == 0.0) {
+            return if (first.contentEquals(second)) 0.0 else 1.0
+        }
+        val correlation = numerator / sqrt(firstMagnitude * secondMagnitude)
+        return ((1.0 - correlation.coerceIn(-1.0, 1.0)) / 2.0).coerceIn(0.0, 1.0)
+    }
+
     companion object {
         const val COLOR_SIGNATURE_SIZE = 12
         const val EDGE_SIGNATURE_SIZE = 32
+        const val SPATIAL_LUMINANCE_SIZE = 64
 
         fun decode(value: String): PortraitFingerprint? = runCatching {
+            if (value.startsWith("v3:")) {
+                val parts = value.split(':', limit = 6)
+                if (parts.size != 6) return null
+                val hash = java.lang.Long.parseUnsignedLong(parts[1], 16)
+                val gradient = java.lang.Long.parseUnsignedLong(parts[2], 16)
+                val edges = parts[3].split(',').map(String::toInt).toIntArray()
+                val colors = parts[4].split(',').map(String::toInt).toIntArray()
+                val spatial = parts[5].split(',').map(String::toInt).toIntArray()
+                if (
+                    edges.size != EDGE_SIGNATURE_SIZE ||
+                    colors.size != COLOR_SIGNATURE_SIZE ||
+                    spatial.size != SPATIAL_LUMINANCE_SIZE
+                ) {
+                    return null
+                }
+                return PortraitFingerprint(
+                    averageHash = hash,
+                    colorSignature = colors,
+                    version = 3,
+                    gradientHash = gradient,
+                    edgeSignature = edges,
+                    spatialLuminanceSignature = spatial
+                )
+            }
             if (value.startsWith("v2:")) {
                 val parts = value.split(':', limit = 5)
                 if (parts.size != 5) return null
@@ -146,7 +223,7 @@ data class PortraitFingerprint(
         }
 
         /**
-         * Creates a V2 signature from a normalized 12x12 portrait sample.
+         * Creates a V3 signature from a normalized 12x12 portrait sample.
          */
         fun fromArgb144(pixels: IntArray): PortraitFingerprint {
             require(pixels.size == 144)
@@ -234,9 +311,10 @@ data class PortraitFingerprint(
             return PortraitFingerprint(
                 averageHash = averageHash,
                 colorSignature = colorSignature,
-                version = 2,
+                version = 3,
                 gradientHash = gradientHash,
-                edgeSignature = edgeSignature
+                edgeSignature = edgeSignature,
+                spatialLuminanceSignature = sampledLuminance
             )
         }
 

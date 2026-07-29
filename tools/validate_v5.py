@@ -125,7 +125,7 @@ require("AdaptiveFrameCadence.interval" in service, "Cadencia adaptativa no inte
 require("averageLatencyMs" in cadence, "Cadencia adaptativa no usa latencia")
 
 require("minimumObservationConfidence: Double = 0.55" in tracker, "Piso de confianza temporal incorrecto")
-require("MIN_AMBIGUITY_MARGIN = 0.025" in selector, "Margen anti-ambiguedad incorrecto")
+require("MIN_AMBIGUITY_MARGIN = 0.035" in selector, "Margen anti-ambiguedad incorrecto")
 require("second.distance - best.distance < minimumMargin" in selector, "No se rechazan retratos ambiguos")
 
 for expected in (

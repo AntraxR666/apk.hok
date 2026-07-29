@@ -30,6 +30,30 @@ class RecognitionConfidenceTest {
     }
 
     @Test
+    fun calibratedJkmWinnerWithStrongMarginIsAccepted() {
+        val result = PortraitMatchSelector.select(
+            listOf(
+                PortraitMatchCandidate("Xiao Qiao", 0.17, 0.65),
+                PortraitMatchCandidate("Flowborn (Tank)", 0.25, 0.65)
+            )
+        )
+
+        assertEquals("Xiao Qiao", result?.heroName)
+    }
+
+    @Test
+    fun nearTieFromRealDraftRemainsManualEvenWhenBothAreClose() {
+        val result = PortraitMatchSelector.select(
+            listOf(
+                PortraitMatchCandidate("Erin", 0.20, 0.70),
+                PortraitMatchCandidate("Lady Zhen", 0.225, 0.70)
+            )
+        )
+
+        assertNull(result)
+    }
+
+    @Test
     fun temporalTrackerIgnoresLowConfidenceNoise() {
         val tracker = TemporalDraftTracker(
             requiredHits = 3,
