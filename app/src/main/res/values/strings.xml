@@ -34,6 +34,15 @@
     <string name="expand_overlay">Abrir</string>
     <string name="collapse_overlay">Cerrar panel</string>
     <string name="rescan">Escanear</string>
+    <string name="scan_draft_now">Escanear selección ahora</string>
+    <string name="slot_recognition_title">Héroes por posición</string>
+    <string name="slot_recognition_waiting">Pulsa Escanear cuando los retratos aparezcan.</string>
+    <string name="quick_correction_no_candidate">No hubo una coincidencia segura. Busca el héroe correcto; la corrección quedará guardada para esta partida.</string>
+    <string name="quick_correction_choose">Elige una sugerencia con un toque o busca otro héroe.</string>
+    <string name="quick_correction_candidate">¿%1$s? · %2$d%% de similitud</string>
+    <string name="search_another_hero">Buscar otro héroe por nombre o título</string>
+    <string name="show_advanced_controls">Mostrar ajustes avanzados</string>
+    <string name="hide_advanced_controls">Ocultar ajustes avanzados</string>
     <string name="swap_sides">Cambiar lados</string>
     <string name="manual_edit">Corregir</string>
     <string name="manual_stage_title">Control manual de etapa</string>

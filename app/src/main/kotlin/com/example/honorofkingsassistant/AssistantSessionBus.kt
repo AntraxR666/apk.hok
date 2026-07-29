@@ -27,6 +27,7 @@ data class AssistantUiState(
     val loadingRosterReconciliation: LoadingRosterReconciliationResult? = null,
     val manualAssignments: ManualTeamAssignments = ManualTeamAssignments(),
     val slotRecognition: List<SlotRecognitionState> = emptyList(),
+    val quickCorrectionRequest: QuickCorrectionRequest? = null,
     val loadingConfirmationReview: Boolean = false,
     val diagnostics: VisionDiagnostics = VisionDiagnostics(),
     val lastUpdatedAtMs: Long = System.currentTimeMillis()

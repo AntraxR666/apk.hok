@@ -37,6 +37,8 @@ class OverlayService : Service() {
     private var panelView: ScrollView? = null
     private var mainPanelContent: LinearLayout? = null
     private var manualEditorContent: LinearLayout? = null
+    private var advancedControlsContent: LinearLayout? = null
+    private var slotRecognitionContent: LinearLayout? = null
     private var toggleButton: Button? = null
     private var bubbleView: TextView? = null
     private var statusView: TextView? = null
@@ -56,6 +58,7 @@ class OverlayService : Service() {
     private val matchModeButtons = linkedMapOf<MatchMode, Button>()
     private var params: WindowManager.LayoutParams? = null
     private var lastRenderedStage: AssistantStage? = null
+    private var lastQuickCorrectionKey: String? = null
     private var unsubscribe: (() -> Unit)? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -198,38 +201,18 @@ class OverlayService : Service() {
 
         panelContent.addView(statusView)
         panelContent.addView(requireNotNull(diagnosticsView))
-        panelContent.addView(sectionLabel(getString(R.string.input_mode_title)))
-        panelContent.addView(
-            buttonRow(
-                inputModeButton(InputMode.AUTO_SCAN, getString(R.string.input_auto)),
-                inputModeButton(InputMode.MANUAL, getString(R.string.input_manual))
-            )
-        )
-        panelContent.addView(sectionLabel(getString(R.string.match_mode_title)))
-        panelContent.addView(
-            buttonRow(
-                matchModeButton(MatchMode.AUTO, getString(R.string.match_auto)),
-                matchModeButton(MatchMode.RANKED_DRAFT, getString(R.string.match_ranked)),
-                matchModeButton(MatchMode.NORMAL_BLIND, getString(R.string.match_normal))
-            )
-        )
-        panelContent.addView(sectionLabel(getString(R.string.manual_stage_title)))
-        panelContent.addView(
-            buttonRow(
-                actionButton(getString(R.string.mode_draft_short)) {
-                    sendStageAction(AssistantStage.DRAFT)
-                },
-                actionButton(getString(R.string.mode_game_short)) {
-                    sendStageAction(AssistantStage.IN_GAME)
-                },
-                actionButton(getString(R.string.mode_pause_short)) {
-                    sendStageAction(AssistantStage.PAUSED)
-                }
-            )
-        )
 
-        // Keep the recovery actions above the slot and strategy details. During a live match
-        // the user must be able to reach them with one expansion and a short tap sequence.
+        // Primary live flow: scan, see every slot, fix only the one that needs attention.
+        rescanButton = actionButton(getString(R.string.scan_draft_now)) {
+            sendCaptureAction(ScreenCaptureService.ACTION_FORCE_SCAN)
+        }
+        panelContent.addView(requireNotNull(rescanButton))
+        panelContent.addView(sectionLabel(getString(R.string.slot_recognition_title)))
+        slotRecognitionContent = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        panelContent.addView(requireNotNull(slotRecognitionContent))
+
         panelContent.addView(sectionLabel(getString(R.string.verification_actions_title)))
         panelContent.addView(
             actionButton(getString(R.string.manual_editor_title)) {
@@ -237,12 +220,12 @@ class OverlayService : Service() {
             }
         )
         loadingRosterButton = actionButton(getString(R.string.confirm_loading_roster)) {
-                root.visibility = View.INVISIBLE
-                sendCaptureAction(ScreenCaptureService.ACTION_CONFIRM_LOADING_ROSTER)
-                mainHandler.postDelayed({
-                    if (root.visibility != View.VISIBLE) root.visibility = View.VISIBLE
-                }, ONE_SHOT_OVERLAY_TIMEOUT_MS)
-            }
+            root.visibility = View.INVISIBLE
+            sendCaptureAction(ScreenCaptureService.ACTION_CONFIRM_LOADING_ROSTER)
+            mainHandler.postDelayed({
+                if (root.visibility != View.VISIBLE) root.visibility = View.VISIBLE
+            }, ONE_SHOT_OVERLAY_TIMEOUT_MS)
+        }
         panelContent.addView(requireNotNull(loadingRosterButton))
         scoreboardScanButton = actionButton(getString(R.string.scan_scoreboard_items)) {
             root.visibility = View.INVISIBLE
@@ -258,8 +241,59 @@ class OverlayService : Service() {
         }.apply { visibility = View.GONE }
         panelContent.addView(suggestionButton)
 
+        panelContent.addView(teamsView)
+        panelContent.addView(recommendationsView)
+        panelContent.addView(strategyView)
+
+        val advancedControls = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        advancedControlsContent = advancedControls
+        panelContent.addView(
+            compactButton(getString(R.string.show_advanced_controls)) { button ->
+                val show = advancedControls.visibility != View.VISIBLE
+                advancedControls.visibility = if (show) View.VISIBLE else View.GONE
+                button.text = getString(
+                    if (show) R.string.hide_advanced_controls
+                    else R.string.show_advanced_controls
+                )
+            }
+        )
+        panelContent.addView(advancedControls)
+
+        advancedControls.addView(sectionLabel(getString(R.string.input_mode_title)))
+        advancedControls.addView(
+            buttonRow(
+                inputModeButton(InputMode.AUTO_SCAN, getString(R.string.input_auto)),
+                inputModeButton(InputMode.MANUAL, getString(R.string.input_manual))
+            )
+        )
+        advancedControls.addView(sectionLabel(getString(R.string.match_mode_title)))
+        advancedControls.addView(
+            buttonRow(
+                matchModeButton(MatchMode.AUTO, getString(R.string.match_auto)),
+                matchModeButton(MatchMode.RANKED_DRAFT, getString(R.string.match_ranked)),
+                matchModeButton(MatchMode.NORMAL_BLIND, getString(R.string.match_normal))
+            )
+        )
+        advancedControls.addView(sectionLabel(getString(R.string.manual_stage_title)))
+        advancedControls.addView(
+            buttonRow(
+                actionButton(getString(R.string.mode_draft_short)) {
+                    sendStageAction(AssistantStage.DRAFT)
+                },
+                actionButton(getString(R.string.mode_game_short)) {
+                    sendStageAction(AssistantStage.IN_GAME)
+                },
+                actionButton(getString(R.string.mode_pause_short)) {
+                    sendStageAction(AssistantStage.PAUSED)
+                }
+            )
+        )
+
         playerSlotLabelView = sectionLabel(getString(R.string.player_slot_auto))
-        panelContent.addView(playerSlotLabelView)
+        advancedControls.addView(playerSlotLabelView)
         val firstSlotRow = buttonRow(
             playerSlotButton(0, getString(R.string.player_slot_auto_short)),
             playerSlotButton(1, "1"),
@@ -270,34 +304,25 @@ class OverlayService : Service() {
             playerSlotButton(4, "4"),
             playerSlotButton(5, "5")
         )
-        panelContent.addView(firstSlotRow)
-        panelContent.addView(secondSlotRow)
+        advancedControls.addView(firstSlotRow)
+        advancedControls.addView(secondSlotRow)
 
         playerPickLabelView = sectionLabel(getString(R.string.player_pick_state_auto))
-        panelContent.addView(playerPickLabelView)
-        panelContent.addView(
+        advancedControls.addView(playerPickLabelView)
+        advancedControls.addView(
             buttonRow(
                 playerPickButton(PlayerPickOverride.AUTO, getString(R.string.player_pick_auto_short)),
                 playerPickButton(PlayerPickOverride.PENDING, getString(R.string.player_pick_pending_short)),
                 playerPickButton(PlayerPickOverride.LOCKED, getString(R.string.player_pick_locked_short))
             )
         )
-
-        panelContent.addView(teamsView)
-        panelContent.addView(recommendationsView)
-        panelContent.addView(strategyView)
-
-        rescanButton = actionButton(getString(R.string.rescan)) {
-            sendCaptureAction(ScreenCaptureService.ACTION_FORCE_SCAN)
-        }
-        panelContent.addView(buttonRow(requireNotNull(rescanButton)))
-        panelContent.addView(
+        advancedControls.addView(
             buttonRow(
                 actionButton(getString(R.string.swap_sides)) {
                     sendCaptureAction(ScreenCaptureService.ACTION_SWAP_SIDES)
                 },
-                actionButton(getString(R.string.edit_team)) {
-                    showManualEditor(forceTenSlots = false)
+                actionButton(getString(R.string.mode_pause_short)) {
+                    sendStageAction(AssistantStage.PAUSED)
                 }
             )
         )
@@ -338,9 +363,9 @@ class OverlayService : Service() {
         textSize = 9f
         minWidth = 0
         minimumWidth = 0
-        minHeight = 0
-        minimumHeight = 0
-        setPadding(dp(5), dp(2), dp(5), dp(2))
+        minHeight = dp(MIN_TOUCH_TARGET_DP)
+        minimumHeight = dp(MIN_TOUCH_TARGET_DP)
+        setPadding(dp(6), dp(4), dp(6), dp(4))
         setOnClickListener { action(this) }
     }
 
@@ -520,6 +545,132 @@ class OverlayService : Service() {
         panelView?.scrollTo(0, 0)
     }
 
+    private fun renderSlotRecognition(state: AssistantUiState) {
+        val host = slotRecognitionContent ?: return
+        host.removeAllViews()
+        val visibleSides = if (state.matchMode.effective == MatchMode.NORMAL_BLIND) {
+            listOf(TeamSide.ALLY)
+        } else {
+            listOf(TeamSide.ALLY, TeamSide.ENEMY)
+        }
+        val states = state.slotRecognition
+        if (states.isEmpty()) {
+            host.addView(
+                overlayText(11f, false).apply {
+                    text = getString(R.string.slot_recognition_waiting)
+                }
+            )
+            return
+        }
+        visibleSides.forEach { side ->
+            val sideStates = states
+                .filter { it.side == side }
+                .sortedBy(SlotRecognitionState::slotIndex)
+            if (sideStates.isEmpty()) return@forEach
+            host.addView(
+                overlayText(10f, true).apply {
+                    text = if (side == TeamSide.ALLY) {
+                        getString(R.string.ally_team)
+                    } else {
+                        getString(R.string.enemy_team)
+                    }
+                }
+            )
+            val buttons = sideStates.map { slotState ->
+                compactButton(SlotRecognitionUiText.compact(slotState)) {
+                    if (
+                        slotState.status != SlotRecognitionStatus.WAITING &&
+                        slotState.status != SlotRecognitionStatus.SCANNING
+                    ) {
+                        showQuickCorrection(
+                            QuickCorrectionRequest(
+                                slot = ManualTeamSlot(slotState.side, slotState.slotIndex),
+                                status = slotState.status,
+                                candidates = slotState.candidates
+                            )
+                        )
+                    }
+                }.apply {
+                    textSize = 8f
+                    isAllCaps = false
+                    setRecognitionStyle(slotState.status)
+                }
+            }
+            host.addView(buttonRow(*buttons.toTypedArray()))
+        }
+    }
+
+    private fun showQuickCorrection(request: QuickCorrectionRequest) {
+        val editor = manualEditorContent ?: return
+        setOverlayFocusable(false)
+        expandPanel()
+        mainPanelContent?.visibility = View.GONE
+        editor.visibility = View.VISIBLE
+        editor.removeAllViews()
+        editor.addView(sectionLabel(SlotRecognitionUiText.correctionTitle(request)))
+        editor.addView(
+            overlayText(12f, false).apply {
+                text = if (request.candidates.isEmpty()) {
+                    getString(R.string.quick_correction_no_candidate)
+                } else {
+                    getString(R.string.quick_correction_choose)
+                }
+            }
+        )
+        request.candidates.forEach { candidate ->
+            val label = getString(
+                R.string.quick_correction_candidate,
+                candidate.heroName,
+                (candidate.confidence * 100).roundToInt()
+            )
+            editor.addView(
+                actionButton(label) {
+                    sendManualAssignment(request.slot, candidate.heroName, teachLoading = false)
+                    showMainPanel()
+                    panelView?.scrollTo(0, 0)
+                }
+            )
+        }
+        editor.addView(
+            actionButton(getString(R.string.search_another_hero)) {
+                showHeroPicker(request.slot, teachLoading = false)
+            }
+        )
+        editor.addView(
+            actionButton(getString(R.string.back_to_summary)) {
+                showMainPanel()
+            }
+        )
+        panelView?.scrollTo(0, 0)
+    }
+
+    private fun expandPanel() {
+        val root = rootView ?: return
+        val panel = panelView ?: return
+        panel.visibility = View.VISIBLE
+        toggleButton?.text = getString(R.string.collapse_overlay)
+        root.background = panelBackground(EXPANDED_ALPHA)
+        val layoutParams = params ?: return
+        root.post { clampOverlayPosition(root, layoutParams) }
+    }
+
+    private fun Button.setRecognitionStyle(status: SlotRecognitionStatus) {
+        val color = when (status) {
+            SlotRecognitionStatus.WAITING -> Color.rgb(62, 67, 74)
+            SlotRecognitionStatus.SCANNING -> Color.rgb(38, 98, 170)
+            SlotRecognitionStatus.DETECTED -> Color.rgb(37, 126, 77)
+            SlotRecognitionStatus.UNCERTAIN -> Color.rgb(184, 109, 22)
+            SlotRecognitionStatus.NOT_DETECTED -> Color.rgb(171, 51, 54)
+            SlotRecognitionStatus.MANUAL -> Color.rgb(100, 73, 170)
+        }
+        background = GradientDrawable().apply {
+            cornerRadius = dp(6).toFloat()
+            setColor(color)
+        }
+        setTextColor(Color.WHITE)
+        alpha = if (status == SlotRecognitionStatus.WAITING) 0.72f else 1f
+    }
+
     private fun showHeroPicker(slot: ManualTeamSlot, teachLoading: Boolean) {
         val editor = manualEditorContent ?: return
         editor.removeAllViews()
@@ -678,12 +829,21 @@ class OverlayService : Service() {
             showMainPanel()
         }
         lastRenderedStage = state.selectedStage
-        bubbleView?.text = when (state.selectedStage) {
+        val bubbleLabel = when (state.selectedStage) {
             AssistantStage.PAUSED -> "HOK · PAUSA"
             AssistantStage.DRAFT -> "HOK · DRAFT"
             AssistantStage.IN_GAME -> "HOK · PARTIDA"
         }
+        bubbleView?.text = if (
+            state.selectedStage == AssistantStage.DRAFT &&
+            QuickCorrectionPolicy.hasActionableProblem(state.slotRecognition)
+        ) {
+            "$bubbleLabel · REVISAR"
+        } else {
+            bubbleLabel
+        }
         statusView?.text = state.status
+        renderSlotRecognition(state)
         val diagnostics = state.diagnostics
         diagnosticsView?.apply {
             val showDiagnostics = state.selectedStage == AssistantStage.DRAFT &&
@@ -872,6 +1032,25 @@ class OverlayService : Service() {
                 plan.evidence.firstOrNull()?.let { append("\n").append(it) }
             }
         }
+
+        val request = state.quickCorrectionRequest
+        if (request == null) {
+            lastQuickCorrectionKey = null
+        } else {
+            val key = buildString {
+                append(request.slot.side.name)
+                append(':')
+                append(request.slot.slotIndex)
+                append(':')
+                append(request.status.name)
+                append(':')
+                append(request.candidates.joinToString { it.heroName })
+            }
+            if (key != lastQuickCorrectionKey) {
+                lastQuickCorrectionKey = key
+                showQuickCorrection(request)
+            }
+        }
     }
 
     private fun sendStageAction(stage: AssistantStage) {
@@ -956,6 +1135,8 @@ class OverlayService : Service() {
         rootView = null
         panelView = null
         diagnosticsView = null
+        advancedControlsContent = null
+        slotRecognitionContent = null
         super.onDestroy()
     }
 
@@ -970,7 +1151,8 @@ class OverlayService : Service() {
         const val COLLAPSED_ALPHA = 0.55f
         const val EXPANDED_ALPHA = 0.82f
         const val MAX_PANEL_HEIGHT_RATIO = 0.72f
-        const val DRAG_HANDLE_HEIGHT_DP = 40
+        const val DRAG_HANDLE_HEIGHT_DP = 48
+        const val MIN_TOUCH_TARGET_DP = 48
         private const val ONE_SHOT_OVERLAY_TIMEOUT_MS = 10_500L
         private const val UI_REFRESH_DELAY_MS = 120L
     }

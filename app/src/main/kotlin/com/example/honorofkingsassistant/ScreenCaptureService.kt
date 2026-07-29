@@ -63,6 +63,8 @@ class ScreenCaptureService : Service() {
     private var playerPickOverride: PlayerPickOverride = PlayerPickOverride.AUTO
     private var lastSlotFingerprints: List<SlotPortraitFingerprint> = emptyList()
     private var lastSlotRecognition: List<SlotRecognitionState> = emptyList()
+    private var explicitDraftScanFramesRemaining = 0
+    private var quickCorrectionRequest: QuickCorrectionRequest? = null
     private var learnedPortraitCount = 0
     private var lastRecognition = RecognitionCalibrationState.UNCALIBRATED
     private var lastLoadingRosterReconciliation: LoadingRosterReconciliationResult? = null
@@ -219,7 +221,9 @@ class ScreenCaptureService : Service() {
             ACTION_FORCE_SCAN -> {
                 if (selectedStage == AssistantStage.DRAFT) {
                     forceNextFrame = true
-                    publishCurrent("Escaneo solicitado")
+                    explicitDraftScanFramesRemaining = EXPLICIT_SCAN_FRAME_BUDGET
+                    quickCorrectionRequest = null
+                    publishCurrent("Escaneo solicitado; comprobando cada slot")
                 } else {
                     publishCurrent("Activa el modo Selección para escanear el draft")
                 }
@@ -281,6 +285,9 @@ class ScreenCaptureService : Service() {
                 val teachLoading = intent.getBooleanExtra(EXTRA_TEACH_LOADING_TEMPLATE, false)
                 if (slotIndex in 1..5 && counterEngine.findHero(heroName) != null) {
                     val learned = assignManualSlot(side, slotIndex, heroName, teachLoading)
+                    if (quickCorrectionRequest?.slot == ManualTeamSlot(side, slotIndex)) {
+                        quickCorrectionRequest = null
+                    }
                     publishCurrent(
                         if (learned) {
                             if (teachLoading) {
@@ -303,6 +310,7 @@ class ScreenCaptureService : Service() {
                 if (slotIndex in 1..5) {
                     manualAssignments = manualAssignments.remove(side, slotIndex)
                     syncLegacyManualSets()
+                    quickCorrectionRequest = null
                     publishCurrent("Héroe manual quitado del slot")
                 }
                 return START_NOT_STICKY
@@ -311,6 +319,7 @@ class ScreenCaptureService : Service() {
                 manualAssignments = manualAssignments.clear()
                 manualAllies.clear()
                 manualEnemies.clear()
+                quickCorrectionRequest = null
                 publishCurrent("Correcciones manuales eliminadas")
                 return START_NOT_STICKY
             }
@@ -431,6 +440,8 @@ class ScreenCaptureService : Service() {
         manualAssignments = ManualTeamAssignments()
         pendingLoadingConfirmation = false
         loadingConfirmationReview = false
+        explicitDraftScanFramesRemaining = 0
+        quickCorrectionRequest = null
         manualAllies.clear()
         manualEnemies.clear()
         playerPickOverride = PlayerPickOverride.AUTO
@@ -602,6 +613,7 @@ class ScreenCaptureService : Service() {
                                     result.slotRecognitionEvidence,
                                     lastBoard
                                 )
+                                updateExplicitScanCorrection()
                             }
                             MatchMode.NORMAL_BLIND -> {
                                 lastBoard = result.board
@@ -901,7 +913,11 @@ class ScreenCaptureService : Service() {
             recognition = lastRecognition,
             loadingRosterReconciliation = lastLoadingRosterReconciliation,
             manualAssignments = manualAssignments,
-            slotRecognition = lastSlotRecognition,
+            slotRecognition = QuickCorrectionPolicy.applyManualAuthority(
+                lastSlotRecognition,
+                manualAssignments
+            ),
+            quickCorrectionRequest = quickCorrectionRequest,
             loadingConfirmationReview = loadingConfirmationReview,
             diagnostics = lastVisionDiagnostics
         )
@@ -942,6 +958,9 @@ class ScreenCaptureService : Service() {
         teachLoading: Boolean
     ): Boolean {
         manualAssignments = manualAssignments.assign(side, slotIndex, heroName)
+        if (quickCorrectionRequest?.slot == ManualTeamSlot(side, slotIndex)) {
+            quickCorrectionRequest = null
+        }
         syncLegacyManualSets()
         val templateDomain = when {
             teachLoading && loadingConfirmationReview &&
@@ -970,6 +989,36 @@ class ScreenCaptureService : Service() {
         manualAllies += manualAssignments.heroes(TeamSide.ALLY)
         manualEnemies.clear()
         manualEnemies += manualAssignments.heroes(TeamSide.ENEMY)
+    }
+
+    private fun updateExplicitScanCorrection() {
+        if (explicitDraftScanFramesRemaining <= 0) return
+        explicitDraftScanFramesRemaining--
+        val presented = QuickCorrectionPolicy.applyManualAuthority(
+            lastSlotRecognition,
+            manualAssignments
+        )
+        val request = QuickCorrectionPolicy.correctionRequest(
+            explicitScanRequested = true,
+            states = presented
+        )
+        when {
+            request != null -> {
+                quickCorrectionRequest = request
+                explicitDraftScanFramesRemaining = 0
+            }
+            presented.any {
+                it.status == SlotRecognitionStatus.DETECTED ||
+                    it.status == SlotRecognitionStatus.MANUAL
+            } && presented.none { it.status == SlotRecognitionStatus.SCANNING } -> {
+                quickCorrectionRequest = null
+                explicitDraftScanFramesRemaining = 0
+            }
+            // An all-WAITING result commonly occurs while the board detector is still
+            // stabilizing. Keep the explicit request alive so the remaining frames can
+            // reach SCANNING and a real 3-of-5 decision.
+            explicitDraftScanFramesRemaining == 0 -> quickCorrectionRequest = null
+        }
     }
 
     private fun restoreOverlayAfterOneShot(openManualEditor: Boolean = false) {
@@ -1105,5 +1154,6 @@ class ScreenCaptureService : Service() {
         private const val CHANNEL_ID = "draft_capture"
         private const val NOTIFICATION_ID = 2001
         private const val LOADING_CONFIRMATION_TIMEOUT_MS = 10_000L
+        private const val EXPLICIT_SCAN_FRAME_BUDGET = 5
     }
 }
