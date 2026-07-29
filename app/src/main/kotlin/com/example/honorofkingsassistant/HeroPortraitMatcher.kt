@@ -37,14 +37,14 @@ class HeroPortraitMatcher(
                 enemyOnRight -> TeamSide.ENEMY
                 else -> TeamSide.ALLY
             }
-            HoKGlobalLandscapeProfile.portraitRegions(physicalLeft).forEachIndexed { index, region ->
+            JkmLx3SelectionProfile.portraitInteriors(physicalLeft).forEachIndexed { index, region ->
                 val normalized = normalizedPixels(bitmap, region)
                 val visualConfidence = visualConfidence(normalized)
                 if (visualConfidence >= MIN_VISUAL_CONFIDENCE) {
                     output += SlotPortraitFingerprint(
                         side = side,
                         slotIndex = index + 1,
-                        fingerprint = PortraitFingerprint.fromArgb64(normalized),
+                        fingerprint = PortraitFingerprint.fromArgb144(normalized),
                         visualConfidence = visualConfidence
                     )
                 }
@@ -72,7 +72,7 @@ class HeroPortraitMatcher(
                     SlotPortraitFingerprint(
                         side = TeamSide.ALLY,
                         slotIndex = index + 1,
-                        fingerprint = PortraitFingerprint.fromArgb64(normalized),
+                        fingerprint = PortraitFingerprint.fromArgb144(normalized),
                         visualConfidence = visualConfidence
                     )
                 }
@@ -145,9 +145,9 @@ class HeroPortraitMatcher(
 
     private fun normalizedPixels(bitmap: Bitmap, rect: PixelRect): IntArray {
         val crop = Bitmap.createBitmap(bitmap, rect.left, rect.top, rect.width, rect.height)
-        val scaled = Bitmap.createScaledBitmap(crop, 8, 8, true)
-        val pixels = IntArray(64)
-        scaled.getPixels(pixels, 0, 8, 0, 0, 8, 8)
+        val scaled = Bitmap.createScaledBitmap(crop, 12, 12, true)
+        val pixels = IntArray(144)
+        scaled.getPixels(pixels, 0, 12, 0, 0, 12, 12)
         if (scaled !== crop) scaled.recycle()
         crop.recycle()
         return pixels
